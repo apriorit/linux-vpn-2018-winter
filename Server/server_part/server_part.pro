@@ -4,3 +4,4 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 SOURCES += main.cpp
+LIBS += -L/usr/lib/x86_64-linux-gnu -lboost_system
