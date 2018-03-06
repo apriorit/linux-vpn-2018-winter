@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">VPN Client</string>
+    <string name="address">Address:</string>
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="port">Port:</string>
+    <string name="secret">Secret:</string>
+
+    <string name="connecting">MyVPN is connecting...</string>
+    <string name="connected">MyVPN is connected!</string>
+    <string name="disconnected">MyVPN is disconnected!</string>
+    </resources>
