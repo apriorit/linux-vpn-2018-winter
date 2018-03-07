@@ -1,4 +1,5 @@
 package com.example.vpnclient;
+
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import android.app.PendingIntent;
 import android.net.VpnService;
@@ -13,12 +14,13 @@ import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.concurrent.TimeUnit;
+
 public class VpnConnection implements Runnable {
-  /**
-   *  Интерфейс обратного вызова, позволяющий {@link MainActivity} узнавать о новых подключениях
-    *  и обновлять уведомление переднего плана с состоянием соединения.
-   */
-   public interface OnEstablishListener {
+    /**
+     *  Интерфейс обратного вызова, позволяющий {@link MainActivity} узнавать о новых подключениях
+         *  и обновлять уведомление переднего плана с состоянием соединения.
+     */
+    public interface OnEstablishListener {
         void onEstablish(ParcelFileDescriptor tunInterface);
     }
     /** Максимальный размер пакета, ограниченный  MTU, который представлен, как signed short. */
@@ -45,7 +47,7 @@ public class VpnConnection implements Runnable {
      *
      * TODO: use a higher-level protocol; hand-rolling is a fun but pointless exercise.
      */
-   private static final int MAX_HANDSHAKE_ATTEMPTS = 50;
+    private static final int MAX_HANDSHAKE_ATTEMPTS = 50;
     private final VpnService mService;
     private final int mConnectionId;
     private final String mServerName;
@@ -54,7 +56,7 @@ public class VpnConnection implements Runnable {
     private PendingIntent mConfigureIntent;
     private OnEstablishListener mOnEstablishListener;
     public VpnConnection(final VpnService service, final int connectionId,
-                            final String serverName, final int serverPort, final byte[] sharedSecret) {
+                         final String serverName, final int serverPort, final byte[] sharedSecret) {
         mService = service;
         mConnectionId = connectionId;
         mServerName = serverName;
@@ -64,7 +66,7 @@ public class VpnConnection implements Runnable {
     /**
      * Optionally, set an intent to configure the VPN. This is {@code null} by default.
      */
-   public void setConfigureIntent(PendingIntent intent) {
+    public void setConfigureIntent(PendingIntent intent) {
         mConfigureIntent = intent;
     }
     public void setOnEstablishListener(OnEstablishListener listener) {
@@ -194,8 +196,7 @@ public class VpnConnection implements Runnable {
         // To build a secured tunnel, we should perform mutual authentication
         // and exchange session keys for encryption. To keep things simple in
         // this demo, we just send the shared secret in plaintext and wait
-        // for the server to send the parameters.
-        // Allocate the buffer for handshaking. We have a hardcoded maximum
+         // Allocate the buffer for handshaking. We have a hardcoded maximum
         // handshake size of 1024 bytes, which should be enough for demo
         // purposes.
         ByteBuffer packet = ByteBuffer.allocate(1024);

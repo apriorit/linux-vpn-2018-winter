@@ -1,5 +1,6 @@
 package com.example.vpnclient;
 
+
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Intent;
@@ -12,14 +13,14 @@ import android.util.Log;
 import android.util.Pair;
 import android.widget.Toast;
 
-import com.example.myapplication.R;
+import com.example.vpnclient.R;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class MyVpnService extends VpnService implements Handler.Callback {
-   private static final String TAG = MyVpnService.class.getSimpleName();
+    private static final String TAG = MyVpnService.class.getSimpleName();
     public static final String ACTION_CONNECT = "com.example.android.myapplication.START";
     public static final String ACTION_DISCONNECT = "com.example.android.myapplication.STOP";
     private Handler mHandler;

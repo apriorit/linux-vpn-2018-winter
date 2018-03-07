@@ -1,5 +1,6 @@
 package com.example.vpnclient;
 
+
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.VpnService;
@@ -7,15 +8,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.TextView;
 
-import com.example.myapplication.R;
+import com.example.vpnclient.R;
 
 public class MainActivity extends AppCompatActivity {
-    public interface Prefs {
-        String NAME = "connection";
-        String SERVER_ADDRESS = "server.address";
-        String SERVER_PORT = "server.port";
-        String SHARED_SECRET = "shared.secret";
-    }
     @Override
 
     public void onCreate(Bundle savedInstanceState) {
@@ -50,14 +45,23 @@ public class MainActivity extends AppCompatActivity {
             startService(getServiceIntent().setAction(MyVpnService.ACTION_DISCONNECT));
         });
     }
+
     @Override
     protected void onActivityResult(int request, int result, Intent data) {
         if (result == RESULT_OK) {
             startService(getServiceIntent().setAction(MyVpnService.ACTION_CONNECT));
         }
     }
+
     private Intent getServiceIntent() {
         return new Intent(this, MyVpnService.class);
+    }
+
+    public interface Prefs {
+        String NAME = "connection";
+        String SERVER_ADDRESS = "server.address";
+        String SERVER_PORT = "server.port";
+        String SHARED_SECRET = "shared.secret";
     }
 
 }
