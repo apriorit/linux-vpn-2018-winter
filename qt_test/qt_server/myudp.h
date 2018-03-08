@@ -4,7 +4,7 @@
 #define MYUDP_H
 
 #include <QObject>
-#include <QUdpSocket>
+#include <QtNetwork/QUdpSocket>
 
 class MyUDP : public QObject
 {

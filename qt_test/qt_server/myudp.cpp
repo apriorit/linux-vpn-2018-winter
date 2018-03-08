@@ -12,7 +12,7 @@ MyUDP::MyUDP(QObject *parent) :
     // to bind to an address and port using bind()
     // bool QAbstractSocket::bind(const QHostAddress & address,
     //     quint16 port = 0, BindMode mode = DefaultForPlatform)
-    socket->bind(QHostAddress::LocalHost, 1234);
+    socket->bind(QHostAddress::Any, 1234);
 
     connect(socket, SIGNAL(readyRead()), this, SLOT(readyRead()));
 }
