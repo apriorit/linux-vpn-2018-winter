@@ -1,6 +1,5 @@
 package com.example.vpnclient;
 
-
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.VpnService;
@@ -19,18 +18,15 @@ public class MainActivity extends AppCompatActivity {
         //Восстанавливаем сохраненные данные на экран
         final TextView serverAddress = (TextView) findViewById(R.id.address);
         final TextView serverPort = (TextView) findViewById(R.id.port);
-        final TextView sharedSecret = (TextView) findViewById(R.id.secret);
         final SharedPreferences prefs = getSharedPreferences(Prefs.NAME, MODE_PRIVATE);
         //Вывод на экран,ранее введенных данных
         serverAddress.setText(prefs.getString(Prefs.SERVER_ADDRESS, ""));
         serverPort.setText(prefs.getString(Prefs.SERVER_PORT, ""));
-        sharedSecret.setText(prefs.getString(Prefs.SHARED_SECRET, ""));
         //При нажатии на кнопку "Connect", даныые в prefs перезаписываются
         findViewById(R.id.connect).setOnClickListener(v -> {
             prefs.edit()
                     .putString(Prefs.SERVER_ADDRESS, serverAddress.getText().toString())
                     .putString(Prefs.SERVER_PORT, serverPort.getText().toString())
-                    .putString(Prefs.SHARED_SECRET, sharedSecret.getText().toString())
                     .commit();
             //Запрос на vpn подключение будет вызываться только один раз, при первом запуске
             // устройства
@@ -61,7 +57,6 @@ public class MainActivity extends AppCompatActivity {
         String NAME = "connection";
         String SERVER_ADDRESS = "server.address";
         String SERVER_PORT = "server.port";
-        String SHARED_SECRET = "shared.secret";
     }
 
 }

@@ -21,8 +21,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class MyVpnService extends VpnService implements Handler.Callback {
     private static final String TAG = MyVpnService.class.getSimpleName();
-    public static final String ACTION_CONNECT = "com.example.android.myapplication.START";
-    public static final String ACTION_DISCONNECT = "com.example.android.myapplication.STOP";
+    public static final String ACTION_CONNECT = "com.example.android.vpnclient.START";
+    public static final String ACTION_DISCONNECT = "com.example.android.vpnclient.STOP";
     private Handler mHandler;
     private static class Connection extends Pair<Thread, ParcelFileDescriptor> {
         public Connection(Thread thread, ParcelFileDescriptor pfd) {
@@ -76,7 +76,6 @@ public class MyVpnService extends VpnService implements Handler.Callback {
         // Extract information from the shared preferences.
         final SharedPreferences prefs = getSharedPreferences(MainActivity.Prefs.NAME, MODE_PRIVATE);
         final String server = prefs.getString(MainActivity.Prefs.SERVER_ADDRESS, "");
-        final byte[] secret = prefs.getString(MainActivity.Prefs.SHARED_SECRET, "").getBytes();
         final int port;
 
         try {
@@ -87,7 +86,7 @@ public class MyVpnService extends VpnService implements Handler.Callback {
         }
         // Запуск соединения
         startConnection(new VpnConnection(
-                this, mNextConnectionId.getAndIncrement(), server, port, secret));
+                this, mNextConnectionId.getAndIncrement(), server, port));
     }
     private void startConnection(final VpnConnection connection) {
         // Заменить существующее подключение новым
