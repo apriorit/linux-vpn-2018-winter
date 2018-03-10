@@ -5,6 +5,8 @@ import android.app.PendingIntent;
 import android.net.VpnService;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
+import android.view.ViewDebug;
+
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -236,7 +238,7 @@ public class VpnConnection implements Runnable {
      //1. Send request to connect a new client
         ByteBuffer packet = ByteBuffer.allocate(1024);
         // Control messages always start with zero.
-        packet.put((byte) 0).put("NewClient".getBytes()).flip();
+        packet.put( "0".getBytes()).put("NewClient".getBytes()).flip();
         // Send the request several times in case of packet loss.
         for (int i = 0; i < 3; ++i) {
             packet.position(0);
@@ -249,8 +251,9 @@ public class VpnConnection implements Runnable {
             Thread.sleep(IDLE_INTERVAL_MS);
             // Normally we should not receive random packets. Check that the first
             // byte is 0 as expected.
+            packet.clear();
             int length = tunnel.read(packet);
-            if (length > 0 && packet.get(0) == 0) {
+            if (length > 0 && packet.get(0) == '0') {
                 setIdendificator(new String(packet.array(), 1, length - 1, US_ASCII).trim());
                 //3. Send key
                 sendKey(tunnel);
@@ -277,7 +280,9 @@ public class VpnConnection implements Runnable {
     {
         ByteBuffer packet = ByteBuffer.allocate(1024);
         //перепроверить ToString
-        packet.put((byte) 0).put(BigInteger.valueOf(Idendificator).toByteArray()).put(",k,".getBytes()).put(mPublicKey.getEncoded()).flip();
+
+        packet.put("0".getBytes()).put("i,".getBytes()).put(Integer.toString(Idendificator).getBytes())
+                .put(" k,".getBytes()).put(mPublicKey.getEncoded()).flip();
         // Send the secret several times in case of packet loss.
         for (int i = 0; i < 3; ++i) {
             packet.position(0);
@@ -287,11 +292,13 @@ public class VpnConnection implements Runnable {
     private String receiveParameters(DatagramChannel tunnel) throws IOException,InterruptedException
     {
         ByteBuffer packet = ByteBuffer.allocate(1024);
-        for (int i = 0; i < 6; ++i) {
-            Thread.sleep(IDLE_INTERVAL_MS);
+        for (int i = 0; i < MAX_HANDSHAKE_ATTEMPTS; ++i) {
+            packet.clear();
             int length = tunnel.read(packet);
-            if (length > 0 && packet.get(0) == 0&&packet.get(1)=='m') {
-                return (new String(packet.array(), 1, length - 1, US_ASCII).trim());
+            if (length > 0 )
+                if(packet.get(0) == '0')
+                if(packet.get(1)=='p'){
+                return (new String(packet.array(), 2, length - 2, US_ASCII).trim());
             }
         }
         throw new IOException("Timed out");
@@ -318,7 +325,7 @@ public class VpnConnection implements Runnable {
                     case 's':
                         builder.addSearchDomain(fields[1]);
                         break;
-                    case 'k':
+                    /*case 'k':
                     {
                         try {
                             X509EncodedKeySpec ks = new X509EncodedKeySpec(fields[1].getBytes());
@@ -330,7 +337,7 @@ public class VpnConnection implements Runnable {
                         catch (InvalidKeySpecException e)
                         {throw new IllegalArgumentException(" Bad key");}
                     }
-                        break;
+                        break;*/
                 }
             } catch (NumberFormatException e) {
                 throw new IllegalArgumentException("Bad parameter: " + parameter);
