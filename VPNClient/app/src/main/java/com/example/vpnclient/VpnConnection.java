@@ -144,14 +144,17 @@ public class VpnConnection implements Runnable {
             tunnel.configureBlocking(false);
 
             // Authenticate and configure the virtual network interface.
+            Log.d(getTag(),"go in handshake");
             iface = handshake(tunnel);
+            Log.d(getTag(),"handshake is successful");
             // Now we are connected. Set the flag.
             connected = true;
+            Log.d(getTag(),"open streams");
             // Packets to be sent are queued in this input stream.
             FileInputStream in = new FileInputStream(iface.getFileDescriptor());
             // Packets received need to be written to this output stream.
             FileOutputStream out = new FileOutputStream(iface.getFileDescriptor());
-            out.flush();            // Allocate the buffer for a single packet.
+                       // Allocate the buffer for a single packet.
             ByteBuffer packet = ByteBuffer.allocate(MAX_PACKET_SIZE);
             // Timeouts:
             //   - when data has not been sent in a while, send empty keepalive messages.
@@ -159,12 +162,15 @@ public class VpnConnection implements Runnable {
             long lastSendTime = System.currentTimeMillis();
             long lastReceiveTime = System.currentTimeMillis();
             // We keep forwarding packets till something goes wrong.
+            Log.d(getTag(),"ready to read and write");
             while (true) {
                 // Assume that we did not make any progress in this iteration.
                 boolean idle = true;
                 // Read the outgoing packet from the input stream.
                 int length = in.read(packet.array());
+                Log.d(getTag(),"read ");
                 if (length > 0) {
+                    Log.d(getTag(),"sent msg ");
                     // Write the outgoing packet to the tunnel.
                     packet.limit(length);
                     tunnel.write(packet);
@@ -293,8 +299,10 @@ public class VpnConnection implements Runnable {
     {
         ByteBuffer packet = ByteBuffer.allocate(1024);
         for (int i = 0; i < MAX_HANDSHAKE_ATTEMPTS; ++i) {
+            Thread.sleep(IDLE_INTERVAL_MS);
             packet.clear();
             int length = tunnel.read(packet);
+            Log.d(getTag(),packet.toString());
             if (length > 0 )
                 if(packet.get(0) == '0')
                 if(packet.get(1)=='p'){
