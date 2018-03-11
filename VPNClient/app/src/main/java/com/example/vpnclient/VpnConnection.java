@@ -151,7 +151,7 @@ public class VpnConnection implements Runnable {
             FileInputStream in = new FileInputStream(iface.getFileDescriptor());
             // Packets received need to be written to this output stream.
             FileOutputStream out = new FileOutputStream(iface.getFileDescriptor());
-            // Allocate the buffer for a single packet.
+            out.flush();            // Allocate the buffer for a single packet.
             ByteBuffer packet = ByteBuffer.allocate(MAX_PACKET_SIZE);
             // Timeouts:
             //   - when data has not been sent in a while, send empty keepalive messages.
@@ -177,7 +177,7 @@ public class VpnConnection implements Runnable {
                 length = tunnel.read(packet);
                 if (length > 0) {
                     // Ignore control messages, which start with zero.
-                    if (packet.get(0) != 0) {
+                    if (packet.get(0) != '0') {
                         // Write the incoming packet to the output stream.
                         out.write(packet.array(), 0, length);
                     }
@@ -194,7 +194,7 @@ public class VpnConnection implements Runnable {
                     if (lastSendTime + KEEPALIVE_INTERVAL_MS <= timeNow) {
                         // We are receiving for a long time but not sending.
                         // Send empty control messages.
-                        packet.put((byte) 0).limit(1);
+                        packet.put("0".getBytes()).limit(1);
                         for (int i = 0; i < 3; ++i) {
                             packet.position(0);
                             tunnel.write(packet);
