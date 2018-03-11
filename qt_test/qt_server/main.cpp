@@ -1,13 +1,11 @@
 #include <QCoreApplication>
-#include "myudp.h"
+#include "myserver.h"
 
 int main(int argc, char *argv[])
 {
+   // sudo nano /proc/sys/kernel/yama/ptrace_scope 1->0
     QCoreApplication a(argc, argv);
 
-    MyUDP client;
-
-    client.HelloUDP();
-
+    MyServer client;
     return a.exec();
 }

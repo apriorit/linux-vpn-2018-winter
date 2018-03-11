@@ -1,0 +1,267 @@
+// myudp.cpp
+
+#include "myserver.h"
+
+MyServer::MyServer(QObject *parent) :
+    QObject(parent)
+{
+    // create a QUDP socket
+    mySocket = new QUdpSocket(this);
+
+    // The most common way to use QUdpSocket class is
+    // to bind to an address and port using bind()
+    // bool QAbstractSocket::bind(const QHostAddress & address,
+    //     quint16 port = 0, BindMode mode = DefaultForPlatform)
+    mySocket->bind(QHostAddress::Any, 1234);
+    connect(mySocket, SIGNAL(readyRead()), this, SLOT(readyRead()));
+}
+
+void MyServer::HelloUDP()
+{
+    QByteArray Data;
+    Data.append("Hello from UDP");
+
+    // Sends the datagram datagram
+    // to the host address and at port.
+    // qint64 QUdpSocket::writeDatagram(const QByteArray & datagram,
+    //                      const QHostAddress & host, quint16 port)
+    mySocket->writeDatagram(Data, QHostAddress::LocalHost, 1234);
+}
+
+void MyServer::readyRead()
+{
+    // when data comes in
+    QByteArray buffer;
+    buffer.resize(mySocket->pendingDatagramSize());
+
+    QHostAddress sender;
+    quint16 senderPort;
+
+    // qint64 QUdpSocket::readDatagram(char * data, qint64 maxSize,
+    //                 QHostAddress * address = 0, quint16 * port = 0)
+    // Receives a datagram no larger than maxSize bytes and stores it in data.
+    // The sender's host address and port is stored in *address and *port
+    // (unless the pointers are 0).
+
+    mySocket->readDatagram(buffer.data(), buffer.size(),
+                         &sender, &senderPort);
+
+    qDebug() << "Message from: " << sender.toString();
+    qDebug() << "Message port: " << senderPort;
+    qDebug() << "Message: " << buffer;
+}
+void MyServer::handshake(QString str)
+{
+ if(str[0]=='0'&&str.remove(0,1)=="NewClient")
+ {
+     QByteArray Data;
+     Data.push_back('0');
+     Data.push_back('i');
+     Data.push_back(',');
+     int i = createIdentificator();
+     Data.push_back(QByteArray::number(i));
+     qDebug()<<i;
+     qDebug()<<Data;
+     QHostAddress sender;
+     quint16 senderPort;
+     for(int i =0; i<3; i++)
+        mySocket->writeDatagram(Data, sender, senderPort);
+     Data.clear();
+    //if get String
+    if(str[0]=='0'&&str.remove(0,1)=='i')
+    {
+        Data[]
+    }
+
+}
+}
+int MyServer::createIdentificator()
+{
+return 123;
+}
+
+int MyServer::get_interface(char *name)
+{
+    int interface = open("/dev/net/tun", O_RDWR | O_NONBLOCK);
+    ifreq ifr;
+    memset(&ifr, 0, sizeof(ifr));
+    ifr.ifr_flags = IFF_TUN | IFF_NO_PI;
+    strncpy(ifr.ifr_name, name, sizeof(ifr.ifr_name));
+    if (ioctl(interface, TUNSETIFF, &ifr)) {
+        perror("Cannot get TUN interface");
+        exit(1);
+    }
+    return interface;
+}
+int MyServer::get_tunnel(char *port, char *secret)
+{
+   // We use an IPv6 socket to cover both IPv4 and IPv6.
+    int tunnel = socket(AF_INET6, SOCK_DGRAM, 0);
+  /*  int flag = 1;
+    setsockopt(tunnel, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag));
+    flag = 0;
+    setsockopt(tunnel, IPPROTO_IPV6, IPV6_V6ONLY, &flag, sizeof(flag));
+    // Accept packets received on any local address.
+    sockaddr_in6 addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin6_family = AF_INET6;
+    addr.sin6_port = htons(atoi(port));
+    // Call bind(2) in a loop since Linux does not have SO_REUSEPORT.
+    while (bind(tunnel, (sockaddr *)&addr, sizeof(addr))) {
+        if (errno != EADDRINUSE) {
+            return -1;
+        }
+        usleep(100000);
+    }
+    // Receive packets till the secret matches.
+    char packet[1024];
+    socklen_t addrlen;
+    do {
+        addrlen = sizeof(addr);
+        int n = recvfrom(tunnel, packet, sizeof(packet), 0,
+                (sockaddr *)&addr, &addrlen);
+        if (n <= 0) {
+            return -1;
+        }
+        packet[n] = 0;
+    } while (packet[0] != 0 || strcmp(secret, &packet[1]));
+    // Connect to the client as we only handle one client at a time.
+
+    connect(tunnel, (sockaddr *)&addr, addrlen);*/
+    return tunnel;
+}
+void MyServer:: build_parameters(char *parameters, int size, int argc, char **argv)
+{
+    // Well, for simplicity, we just concatenate them (almost) blindly.
+    int offset = 0;
+    for (int i = 4; i < argc; ++i) {
+        char *parameter = argv[i];
+        int length = strlen(parameter);
+        char delimiter = ',';
+        // If it looks like an option, prepend a space instead of a comma.
+        if (length == 2 && parameter[0] == '-') {
+            ++parameter;
+            --length;
+            delimiter = ' ';
+        }
+        // This is just a demo app, really.
+        if (offset + length >= size) {
+            puts("Parameters are too large");
+            exit(1);
+        }
+        // Append the delimiter and the parameter.
+        parameters[offset] = delimiter;
+        memcpy(&parameters[offset + 1], parameter, length);
+        offset += 1 + length;
+    }
+    // Fill the rest of the space with spaces.
+    memset(&parameters[offset], ' ', size - offset);
+    // Control messages always start with zero.
+    parameters[0] = 0;
+}
+int MyServer::run(int argc, char **argv){
+    if (argc < 5) {
+        printf("Usage: %s <tunN> <port> <secret> options...\n"
+               "\n"
+               "Options:\n"
+               "  -m <MTU> for the maximum transmission unit\n"
+               "  -a <address> <prefix-length> for the private address\n"
+               "  -r <address> <prefix-length> for the forwarding route\n"
+               "  -d <address> for the domain name server\n"
+               "  -s <domain> for the search domain\n"
+               "\n"
+               "Note that TUN interface needs to be configured properly\n"
+               "BEFORE running this program. For more information, please\n"
+               "read the comments in the source code.\n\n", argv[0]);
+        exit(1);
+    }
+    // Parse the arguments and set the parameters.
+        char parameters[1024];
+        build_parameters(parameters, sizeof(parameters), argc, argv);
+        // Get TUN interface.
+        int interface = get_interface(argv[1]);
+        // Wait for a tunnel.
+        int tunnel;
+        while ((tunnel = get_tunnel(argv[2], argv[3])) != -1) {
+            printf("%s: Here comes a new tunnel\n", argv[1]);
+            // On UN*X, there are many ways to deal with multiple file
+            // descriptors, such as poll(2), select(2), epoll(7) on Linux,
+            // kqueue(2) on FreeBSD, pthread(3), or even fork(2). Here we
+            // mimic everything from the client, so their source code can
+            // be easily compared side by side.
+            // Put the tunnel into non-blocking mode.
+            fcntl(tunnel, F_SETFL, O_NONBLOCK);
+            // Send the parameters several times in case of packet loss.
+            for (int i = 0; i < 3; ++i) {
+                send(tunnel, parameters, sizeof(parameters), MSG_NOSIGNAL);
+            }
+            // Allocate the buffer for a single packet.
+                    char packet[32767];
+                    // We use a timer to determine the status of the tunnel. It
+                    // works on both sides. A positive value means sending, and
+                    // any other means receiving. We start with receiving.
+                    int timer = 0;
+                    // We keep forwarding packets till something goes wrong.
+                    while (true) {
+                        // Assume that we did not make any progress in this iteration.
+                        bool idle = true;
+                        // Read the outgoing packet from the input stream.
+                        int length = read(interface, packet, sizeof(packet));
+                        if (length > 0) {
+                            // Write the outgoing packet to the tunnel.
+                            send(tunnel, packet, length, MSG_NOSIGNAL);
+                            // There might be more outgoing packets.
+                            idle = false;
+                            // If we were receiving, switch to sending.
+                            if (timer < 1) {
+                                timer = 1;
+                            }
+                                     }
+                                     // Read the incoming packet from the tunnel.
+                                     length = recv(tunnel, packet, sizeof(packet), 0);
+                                     if (length == 0) {
+                                         break;
+                                     }
+                                     if (length > 0) {
+                                         // Ignore control messages, which start with zero.
+                                         if (packet[0] != 0) {
+                                             // Write the incoming packet to the output stream.
+                                             write(interface, packet, length);
+                                         }
+                                         // There might be more incoming packets.
+                                         idle = false;
+                                         // If we were sending, switch to receiving.
+                                         if (timer > 0) {
+                                             timer = 0;
+                                         }
+                                     }
+                                     // If we are idle or waiting for the network, sleep for a
+                                                 // fraction of time to avoid busy looping.
+                                                 if (idle) {
+                                                     usleep(100000);
+                                                     // Increase the timer. This is inaccurate but good enough,
+                                                     // since everything is operated in non-blocking mode.
+                                                     timer += (timer > 0) ? 100 : -100;
+                                                     // We are receiving for a long time but not sending.
+                                                     // Can you figure out why we use a different value? :)
+                                                     if (timer < -16000) {
+                                                         // Send empty control messages.
+                                                         packet[0] = 0;
+                                                         for (int i = 0; i < 3; ++i) {
+                                                             send(tunnel, packet, 1, MSG_NOSIGNAL);
+                                                         }
+                                                         // Switch to sending.
+                                                         timer = 1;
+                                                     }
+                                                     // We are sending for a long time but not receiving.
+                                                                   if (timer > 20000) {
+                                                                       break;
+                                                                   }
+                                                               }
+                                                           }
+                                                           printf("%s: The tunnel is broken\n", argv[1]);
+                                                           close(tunnel);
+                                                       }
+                                                       perror("Cannot create tunnels");
+                                                       exit(1);
+                                                   }
