@@ -144,13 +144,10 @@ public class VpnConnection implements Runnable {
             tunnel.configureBlocking(false);
 
             // Authenticate and configure the virtual network interface.
-            Log.d(getTag(),"go in handshake");
             iface = handshake(tunnel);
-            Log.d(getTag(),"handshake is successful");
             // Now we are connected. Set the flag.
             connected = true;
-            Log.d(getTag(),"open streams");
-            // Packets to be sent are queued in this input stream.
+            // Packets to be sent are queued in this input stream.5
             FileInputStream in = new FileInputStream(iface.getFileDescriptor());
             // Packets received need to be written to this output stream.
             FileOutputStream out = new FileOutputStream(iface.getFileDescriptor());
@@ -162,15 +159,12 @@ public class VpnConnection implements Runnable {
             long lastSendTime = System.currentTimeMillis();
             long lastReceiveTime = System.currentTimeMillis();
             // We keep forwarding packets till something goes wrong.
-            Log.d(getTag(),"ready to read and write");
             while (true) {
                 // Assume that we did not make any progress in this iteration.
                 boolean idle = true;
                 // Read the outgoing packet from the input stream.
                 int length = in.read(packet.array());
-                Log.d(getTag(),"read ");
                 if (length > 0) {
-                    Log.d(getTag(),"sent msg ");
                     // Write the outgoing packet to the tunnel.
                     packet.limit(length);
                     tunnel.write(packet);
@@ -183,7 +177,7 @@ public class VpnConnection implements Runnable {
                 length = tunnel.read(packet);
                 if (length > 0) {
                     // Ignore control messages, which start with zero.
-                    if (packet.get(0) != '0') {
+                    if (packet.get(0) != 0) {
                         // Write the incoming packet to the output stream.
                         out.write(packet.array(), 0, length);
                     }
@@ -200,7 +194,7 @@ public class VpnConnection implements Runnable {
                     if (lastSendTime + KEEPALIVE_INTERVAL_MS <= timeNow) {
                         // We are receiving for a long time but not sending.
                         // Send empty control messages.
-                        packet.put("0".getBytes()).limit(1);
+                        packet.put((byte)0).limit(1);
                         for (int i = 0; i < 3; ++i) {
                             packet.position(0);
                             tunnel.write(packet);
@@ -244,7 +238,7 @@ public class VpnConnection implements Runnable {
      //1. Send request to connect a new client
         ByteBuffer packet = ByteBuffer.allocate(1024);
         // Control messages always start with zero.
-        packet.put( "0".getBytes()).put("NewClient".getBytes()).flip();
+        packet.put( (byte)0).put("NewClient".getBytes()).flip();
         // Send the request several times in case of packet loss.
         for (int i = 0; i < 3; ++i) {
             packet.position(0);
@@ -259,13 +253,13 @@ public class VpnConnection implements Runnable {
             // byte is 0 as expected.
             packet.clear();
             int length = tunnel.read(packet);
-            if (length > 0 && packet.get(0) == '0') {
+            if (length > 0 && packet.get(0) == 0) {
                 setIdendificator(new String(packet.array(), 1, length - 1, US_ASCII).trim());
                 //3. Send key
                 sendKey(tunnel);
                 //4.receiveParameters
                 String parameters = receiveParameters(tunnel);
-                return configure(parameters);
+                    return configure(parameters);
             }
         }
         throw new IOException("Timed out");
@@ -285,9 +279,8 @@ public class VpnConnection implements Runnable {
     private void sendKey(DatagramChannel tunnel) throws IOException,InterruptedException
     {
         ByteBuffer packet = ByteBuffer.allocate(1024);
-        //перепроверить ToString
 
-        packet.put("0".getBytes()).put("i,".getBytes()).put(Integer.toString(Idendificator).getBytes())
+        packet.put((byte)0).put("i,".getBytes()).put(Integer.toString(Idendificator).getBytes())
                 .put(" k,".getBytes()).put(mPublicKey.getEncoded()).flip();
         // Send the secret several times in case of packet loss.
         for (int i = 0; i < 3; ++i) {
@@ -303,9 +296,7 @@ public class VpnConnection implements Runnable {
             packet.clear();
             int length = tunnel.read(packet);
             Log.d(getTag(),packet.toString());
-            if (length > 0 )
-                if(packet.get(0) == '0')
-                if(packet.get(1)=='p'){
+            if (length > 0 && packet.get(0) == 0&&packet.get(1)=='p'){
                 return (new String(packet.array(), 2, length - 2, US_ASCII).trim());
             }
         }

@@ -380,6 +380,7 @@ moc_myserver.cpp: /usr/include/qt5/QtCore/QObject \
 		/usr/include/qt5/QtCore/qset.h \
 		/usr/include/qt5/QtCore/qcontiguouscache.h \
 		/usr/include/qt5/QtNetwork/qhostaddress.h \
+		/usr/include/qt5/QtCore/QMap \
 		../qt_server/myserver.h
 	/usr/lib/i386-linux-gnu/qt5/bin/moc $(DEFINES) $(INCPATH) -I/usr/include/c++/4.8 -I/usr/include/i386-linux-gnu/c++/4.8 -I/usr/include/c++/4.8/backward -I/usr/lib/gcc/i686-linux-gnu/4.8/include -I/usr/local/include -I/usr/lib/gcc/i686-linux-gnu/4.8/include-fixed -I/usr/include/i386-linux-gnu -I/usr/include ../qt_server/myserver.h -o moc_myserver.cpp
 
@@ -476,7 +477,8 @@ main.o: ../qt_server/main.cpp /usr/include/qt5/QtCore/QCoreApplication \
 		/usr/include/qt5/QtCore/qpoint.h \
 		/usr/include/qt5/QtCore/qset.h \
 		/usr/include/qt5/QtCore/qcontiguouscache.h \
-		/usr/include/qt5/QtNetwork/qhostaddress.h
+		/usr/include/qt5/QtNetwork/qhostaddress.h \
+		/usr/include/qt5/QtCore/QMap
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o ../qt_server/main.cpp
 
 myserver.o: ../qt_server/myserver.cpp ../qt_server/myserver.h \
@@ -557,7 +559,8 @@ myserver.o: ../qt_server/myserver.cpp ../qt_server/myserver.h \
 		/usr/include/qt5/QtCore/qpoint.h \
 		/usr/include/qt5/QtCore/qset.h \
 		/usr/include/qt5/QtCore/qcontiguouscache.h \
-		/usr/include/qt5/QtNetwork/qhostaddress.h
+		/usr/include/qt5/QtNetwork/qhostaddress.h \
+		/usr/include/qt5/QtCore/QMap
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o myserver.o ../qt_server/myserver.cpp
 
 moc_myserver.o: moc_myserver.cpp 

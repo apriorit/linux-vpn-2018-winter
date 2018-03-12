@@ -15,6 +15,7 @@ MyServer::MyServer(QObject *parent) :
     mySocket->bind(QHostAddress::Any, 1234);
     connect(mySocket, SIGNAL(readyRead()), this, SLOT(readyRead()));
     publicKey = 321;
+    interface = get_interface("tun44");
 }
 
 
@@ -24,6 +25,7 @@ void MyServer::readyRead()
 
     // when data comes in
     QByteArray buffer;
+     QByteArray newbuffer;
     buffer.resize(mySocket->pendingDatagramSize());
     QHostAddress sender;
     quint16 senderPort;
@@ -35,35 +37,61 @@ void MyServer::readyRead()
 
     mySocket->readDatagram(buffer.data(), buffer.size(),
                          &sender, &senderPort);
-   if(buffer[0]=='0')
-       handshake(buffer,sender,senderPort);
+    //check on length
+    if(buffer.length()>0)
+    {
+   if(int(buffer[0])==0)
+   {
+       handshake((buffer.remove(0,1)),sender,senderPort);
+   }
+   else
+   {
+       int wCount = 0;
+       int rCount = 0;
+       rCount = read(interface, newbuffer.data(), newbuffer.size());
+       wCount = write(interface, buffer, buffer.size());
+       qDebug() << "rCount " << rCount<<endl;
+       qDebug() << "wCount " << wCount<<endl;
+
+       QHostAddress a("192.168.0.1");
+       mySocket->writeDatagram(newbuffer,a , senderPort);
+       qDebug() << errno;
+
+   }
     qDebug() << "Message from: " << sender.toString();
     qDebug() << "Message port: " << senderPort;
     qDebug() << "Message: " << (buffer.remove(0,1));
+    }
     buffer.clear();
 
 }
 void MyServer::handshake(QString str,QHostAddress sender,quint16 senderPort)
 {
-    str.remove(0,1);//delete the first symbol '0'
  if(str=="NewClient")
  {
      QByteArray Data;
-     Data.push_back('0');
+     Data.push_back(char(0));
      Data.push_back('i');
      Data.push_back(',');
      int i = createIdentificator();
      Data.push_back(QByteArray::number(i));
      for(int i =0; i<3; i++)
+     {
         mySocket->writeDatagram(Data, sender, senderPort);
+        qDebug()<<Data;
+     }
      Data.clear();
 }
  else
  {
      try{
      QStringList strings = str.split(' ');
+     if(strings.size()==2)
+     {
      QStringList paramId = strings[0].split(',');
      QStringList paramKey = strings[1].split(',');
+     if(paramId.size()==2&&paramKey.size()==2)
+     {
         if(paramId[0]=="i"&&paramKey[0]=="k")
         {
             //TODO:modificate public key firstly
@@ -72,9 +100,13 @@ void MyServer::handshake(QString str,QHostAddress sender,quint16 senderPort)
             clients.insert(paramId[1].toInt(), Client(key,ip));
             QByteArray Data = buildParameters(ip);
             for(int i =0; i<3; i++)
-               mySocket->writeDatagram(Data, sender, senderPort);
-
+             {  mySocket->writeDatagram(Data, sender, senderPort);
+                  qDebug()<<Data;
+            }
         }
+        else throw std::runtime_error("Bad argument fo aurhorization");
+     }
+     }
      }
      catch(std::runtime_error& ex)
      {
@@ -90,7 +122,7 @@ return 123;
 QString MyServer::giveIPAddress()
 {
     //return random ip
-    return "192.168.0.103";
+    return "192.168.0.1";
 }
 
 QByteArray MyServer:: buildParameters(QString ipAddress)
@@ -107,7 +139,7 @@ QByteArray MyServer:: buildParameters(QString ipAddress)
    QByteArray dns ="8.8.8.8";
 
  QByteArray parametres;
- parametres.push_back('0');
+ parametres.push_back(char(0));
  parametres.push_back('p');
  parametres.push_back("m,");
  parametres.push_back(QByteArray::number(mtu));
@@ -129,4 +161,17 @@ QByteArray MyServer:: buildParameters(QString ipAddress)
 
  return parametres;
 
+}
+int MyServer::get_interface(char *name)
+{
+    int interface = open("/dev/net/tun", O_RDWR | O_NONBLOCK);
+        ifreq ifr;
+        memset(&ifr, 0, sizeof(ifr));
+        ifr.ifr_flags = IFF_TUN | IFF_NO_PI;
+        strncpy(ifr.ifr_name, name, sizeof(ifr.ifr_name));
+        if (ioctl(interface, TUNSETIFF, &ifr)) {
+            perror("Cannot get TUN interface");
+            exit(1);
+        }
+        return interface;
 }

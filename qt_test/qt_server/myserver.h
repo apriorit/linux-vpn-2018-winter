@@ -41,6 +41,10 @@ public:
      int createIdentificator();
      QString giveIPAddress();
      void handshake(QString str,QHostAddress sender,quint16 senderPort);
+     int get_interface(char *name);
+
+     ~MyServer(){ close(interface);}
+
 signals:
 
 public slots:
@@ -50,6 +54,7 @@ private:
     QUdpSocket *mySocket;
     QMap<int,Client> clients;
     int publicKey;
+    int interface;
 };
 
 #endif // MYSERVER_H
