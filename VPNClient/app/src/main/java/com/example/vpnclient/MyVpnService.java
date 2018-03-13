@@ -11,7 +11,9 @@ import android.os.Message;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 import android.util.Pair;
+import android.widget.TextView;
 import android.widget.Toast;
+import android.support.v7.app.AppCompatActivity;
 
 import com.example.vpnclient.R;
 
@@ -40,6 +42,7 @@ public class MyVpnService extends VpnService implements Handler.Callback {
         //  handler используется только для отображения сообщения
         if (mHandler == null) {
             mHandler = new Handler(this);
+
         }
         // Создать intent для "конфигурации" соединения (просто запуск VpnClient).
         mConfigureIntent = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class),
