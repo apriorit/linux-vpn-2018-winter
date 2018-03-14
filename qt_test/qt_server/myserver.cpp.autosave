@@ -53,6 +53,7 @@ void MyServer::readyRead()
            wCount = write(interface, buffer, buffer.size());
            rCount = read(interface, newbuffer.data(), newbuffer.size());
            qDebug() << "r" << rCount << " w" << wCount;
+           
         //mySocket->writeDatagram(newbuffer, sender, senderPort);
        }
        if(int(buffer[0])==0) {

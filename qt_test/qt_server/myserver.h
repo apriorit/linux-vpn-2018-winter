@@ -42,7 +42,6 @@ public:
      QString giveIPAddress();
      void handshake(QString str,QHostAddress sender,quint16 senderPort);
      int get_interface(char *name);
-
      ~MyServer(){ close(interface);}
 
 signals:
