@@ -27,6 +27,7 @@ void MyServer::readyRead()
     QByteArray buffer;
      QByteArray newbuffer;
     buffer.resize(mySocket->pendingDatagramSize());
+    newbuffer.resize(1500);
     QHostAddress sender;
     quint16 senderPort;
     // qint64 QUdpSocket::readDatagram(char * data, qint64 maxSize,
@@ -48,14 +49,14 @@ void MyServer::readyRead()
    {
        int wCount = 0;
        int rCount = 0;
-       rCount = read(interface, newbuffer.data(), newbuffer.size());
        wCount = write(interface, buffer, buffer.size());
+       rCount = read(interface, newbuffer.data(), newbuffer.size());
        qDebug() << "rCount " << rCount<<endl;
        qDebug() << "wCount " << wCount<<endl;
-
-       QHostAddress a("192.168.0.1");
-       mySocket->writeDatagram(newbuffer,a , senderPort);
-       qDebug() << errno;
+       qDebug() << "Err: " << errno;
+	mySocket->writeDatagram(newbuffer, sender, senderPort);
+//       QHostAddress a("192.168.0.1");
+       
 
    }
     qDebug() << "Message from: " << sender.toString();
@@ -122,7 +123,7 @@ return 123;
 QString MyServer::giveIPAddress()
 {
     //return random ip
-    return "192.168.0.1";
+    return "192.168.0.2";
 }
 
 QByteArray MyServer:: buildParameters(QString ipAddress)
@@ -173,5 +174,9 @@ int MyServer::get_interface(char *name)
             perror("Cannot get TUN interface");
             exit(1);
         }
+	else {
+	   system("ip address add 192.168.0.1/24 dev tun44");
+	   system("ip link set up dev tun44");
+	}
         return interface;
 }

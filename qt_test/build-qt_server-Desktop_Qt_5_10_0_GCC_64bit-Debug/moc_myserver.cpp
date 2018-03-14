@@ -1,7 +1,7 @@
 /****************************************************************************
 ** Meta object code from reading C++ file 'myserver.h'
 **
-** Created by: The Qt Meta Object Compiler version 67 (Qt 5.2.1)
+** Created by: The Qt Meta Object Compiler version 67 (Qt 5.10.0)
 **
 ** WARNING! All changes made in this file will be lost!
 *****************************************************************************/
@@ -12,28 +12,31 @@
 #if !defined(Q_MOC_OUTPUT_REVISION)
 #error "The header file 'myserver.h' doesn't include <QObject>."
 #elif Q_MOC_OUTPUT_REVISION != 67
-#error "This file was generated using the moc from 5.2.1. It"
+#error "This file was generated using the moc from 5.10.0. It"
 #error "cannot be used with the include files from this version of Qt."
 #error "(The moc has changed too much.)"
 #endif
 
 QT_BEGIN_MOC_NAMESPACE
+QT_WARNING_PUSH
+QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_MyServer_t {
     QByteArrayData data[3];
-    char stringdata[21];
+    char stringdata0[20];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
-    offsetof(qt_meta_stringdata_MyServer_t, stringdata) + ofs \
-        - idx * sizeof(QByteArrayData) \
+    qptrdiff(offsetof(qt_meta_stringdata_MyServer_t, stringdata0) + ofs \
+        - idx * sizeof(QByteArrayData)) \
     )
 static const qt_meta_stringdata_MyServer_t qt_meta_stringdata_MyServer = {
     {
-QT_MOC_LITERAL(0, 0, 8),
-QT_MOC_LITERAL(1, 9, 9),
-QT_MOC_LITERAL(2, 19, 0)
+QT_MOC_LITERAL(0, 0, 8), // "MyServer"
+QT_MOC_LITERAL(1, 9, 9), // "readyRead"
+QT_MOC_LITERAL(2, 19, 0) // ""
+
     },
-    "MyServer\0readyRead\0\0"
+    "MyServer\0readyRead\0"
 };
 #undef QT_MOC_LITERAL
 
@@ -51,7 +54,7 @@ static const uint qt_meta_data_MyServer[] = {
        0,       // signalCount
 
  // slots: name, argc, parameters, tag, flags
-       1,    0,   19,    2, 0x0a,
+       1,    0,   19,    2, 0x0a /* Public */,
 
  // slots: parameters
     QMetaType::Void,
@@ -63,6 +66,7 @@ void MyServer::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, vo
 {
     if (_c == QMetaObject::InvokeMetaMethod) {
         MyServer *_t = static_cast<MyServer *>(_o);
+        Q_UNUSED(_t)
         switch (_id) {
         case 0: _t->readyRead(); break;
         default: ;
@@ -73,7 +77,7 @@ void MyServer::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, vo
 
 const QMetaObject MyServer::staticMetaObject = {
     { &QObject::staticMetaObject, qt_meta_stringdata_MyServer.data,
-      qt_meta_data_MyServer,  qt_static_metacall, 0, 0}
+      qt_meta_data_MyServer,  qt_static_metacall, nullptr, nullptr}
 };
 
 
@@ -84,9 +88,9 @@ const QMetaObject *MyServer::metaObject() const
 
 void *MyServer::qt_metacast(const char *_clname)
 {
-    if (!_clname) return 0;
-    if (!strcmp(_clname, qt_meta_stringdata_MyServer.stringdata))
-        return static_cast<void*>(const_cast< MyServer*>(this));
+    if (!_clname) return nullptr;
+    if (!strcmp(_clname, qt_meta_stringdata_MyServer.stringdata0))
+        return static_cast<void*>(this);
     return QObject::qt_metacast(_clname);
 }
 
@@ -106,4 +110,5 @@ int MyServer::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     }
     return _id;
 }
+QT_WARNING_POP
 QT_END_MOC_NAMESPACE

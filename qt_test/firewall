@@ -1,0 +1,17 @@
+#!/bin/sh
+echo 1 >/proc/sys/net/ipv4/ip_forward #turn on ip-forward
+
+FW=/sbin/iptables #create FW to reserve time
+
+#clear all rules
+$FW -F
+$FW -F -t nat
+$FW -X
+#Variable of network, which we will nat
+NET="192.168.0.0/24"
+$FW -A INPUT -s $NET -j ACCEPT
+
+#turn in nat with iptables masquerade
+$FW -A FORWARD -s 0/0 -d $NET -j ACCEPT
+$FW -A FORWARD -d 0/0 -s $NET -j ACCEPT
+$FW -t nat -A POSTROUTING -s $NET -j MASQUERADE
