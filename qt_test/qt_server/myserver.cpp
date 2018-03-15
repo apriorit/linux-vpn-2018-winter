@@ -7,6 +7,12 @@ MyServer::MyServer(QObject *parent) :
 {
     // create a QUDP socket
     mySocket = new QUdpSocket(this);
+    int j = 2;
+    for (int i = 0; i < 254; i++)
+    {
+        ipPool.enqueue("10.0.0." + std::to_string(j));
+        j++;
+    }
 
     // The most common way to use QUdpSocket class is
     // to bind to an address and port using bind()
@@ -53,7 +59,10 @@ void MyServer::readyRead()
            wCount = write(interface, buffer, buffer.size());
            rCount = read(interface, newbuffer.data(), newbuffer.size());
            qDebug() << "r" << rCount << " w" << wCount;
-        //mySocket->writeDatagram(newbuffer, sender, senderPort);
+           struct iphdr *ip  = reinterpret_cast<iphdr*>(buffer.data());
+           uint32_t ip_addr = ntohl(ip->daddr);
+           int a = 0;
+      //  mySocket->writeDatagram(newbuffer, sender, senderPort);
        }
        if(int(buffer[0])==0) {
             type = "handshake";
@@ -100,6 +109,7 @@ void MyServer::handshake(QString str,QHostAddress sender,quint16 senderPort)
             //TODO:modificate public key firstly
             QString key  = paramKey[1];
             QString ip = giveIPAddress();
+            addrs.insert(ip, sender.toString());
             clients.insert(paramId[1].toInt(), Client(key,ip));
             QByteArray Data = buildParameters(ip);
             for(int i =0; i<3; i++)
@@ -124,8 +134,8 @@ return 123;
 }
 QString MyServer::giveIPAddress()
 {
-    //return random ip
-    return "10.0.0.2";
+
+    return QString::fromStdString(ipPool.dequeue());
 }
 
 QByteArray MyServer:: buildParameters(QString ipAddress)

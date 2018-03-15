@@ -18,6 +18,8 @@
 #include <net/if.h>
 #include <linux/if_tun.h>
 #include "QMap"
+#include <linux/ip.h>
+#include <QQueue>
 
 struct Client
 {
@@ -54,6 +56,8 @@ private:
     QMap<int,Client> clients;
     int publicKey;
     int interface;
+    QQueue<std::string> ipPool;
+    QMap<QString,QString> addrs;
 };
 
 #endif // MYSERVER_H
