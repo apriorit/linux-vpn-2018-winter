@@ -21,18 +21,20 @@
 #include <linux/ip.h>
 #include <linux/ipv6.h>
 #include <QQueue>
-#include <sstream>
-#include <iostream>
+#include <QTimer>
+#include <iterator>
 
 
 struct Client
 {
     QString publicKey;
     QHostAddress realIpAddress;
-    Client(QString pKey,QHostAddress realIP)
+    QTimer *timer = new QTimer();
+    Client(QString pKey,QHostAddress &realIP)
     {
         publicKey = pKey;
         realIpAddress = realIP;
+        timer->setInterval(1000);
     }
 };
 
@@ -54,6 +56,7 @@ signals:
 
 public slots:
     void readyRead();
+    void disconnect(QString ip);
 private:
 
     QUdpSocket *mySocket;

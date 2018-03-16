@@ -19,13 +19,17 @@ MyServer::MyServer(QObject *parent) :
     // to bind to an address and port using bind()
     // bool QAbstractSocket::bind(const QHostAddress & address,
     //     quint16 port = 0, BindMode mode = DefaultForPlatform)
-    mySocket->bind(QHostAddress::Any, 1234);
+    mySocket->bind(QHostAddress::AnyIPv4, 1234);
     connect(mySocket, SIGNAL(readyRead()), this, SLOT(readyRead()));
     publicKey = 321;
     interface = get_interface("tun44");
 }
 
-
+void MyServer::disconnect(QString ip)
+{
+    ipPool.enqueue(std::string(ip.toUtf8()));
+    clients.remove(ip);
+}
 
 void MyServer::readyRead()
 {
@@ -130,12 +134,14 @@ void MyServer::handshake(QString str,QHostAddress sender,quint16 senderPort)
             //TODO:modificate public key firstly
             QString key  = paramKey[1];
             QString localIP = giveIPAddress();
-            clients.insert(localIP, Client(key,sender));
+            auto myClient = clients.insert(localIP, Client(key, sender));
+            connect(myClient->timer, SIGNAL(void timeout()), this, SLOT(void disconnect(myClient.key())));
             QByteArray Data = buildParameters(localIP);
             for(int i =0; i<3; i++)
              {  mySocket->writeDatagram(Data, sender, senderPort);
                   qDebug()<<Data;
             }
+            myClient->timer->start();
         }
         else throw std::runtime_error("Bad argument fo aurhorization");
      }
