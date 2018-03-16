@@ -7,6 +7,7 @@ MyServer::MyServer(QObject *parent) :
 {
     // create a QUDP socket
     mySocket = new QUdpSocket(this);
+
     int j = 2;
     for (int i = 0; i < 254; i++)
     {
@@ -51,6 +52,7 @@ void MyServer::readyRead()
        if(int(buffer[0])==0)
        {
            handshake((buffer.remove(0,1)),sender,senderPort);
+           type = "handshake";
        }
        else
        {
@@ -59,16 +61,35 @@ void MyServer::readyRead()
            wCount = write(interface, buffer, buffer.size());
            rCount = read(interface, newbuffer.data(), newbuffer.size());
            qDebug() << "r" << rCount << " w" << wCount;
-           struct iphdr *ip  = reinterpret_cast<iphdr*>(buffer.data());
-           uint32_t ip_addr = ntohl(ip->daddr);
-           int a = 0;
-      //  mySocket->writeDatagram(newbuffer, sender, senderPort);
-       }
-       if(int(buffer[0])==0) {
-            type = "handshake";
-       }
-       else {
-            type = "traffic";
+
+           if (rCount > 0)
+           {
+               struct iphdr *ip  = reinterpret_cast<iphdr*>(newbuffer.data());
+
+               if (ip->version == 4)
+               {
+                   uint32_t ip_addr = ntohl(ip->daddr);
+                   char buf[24];
+                   inet_ntop(AF_INET, &ip->daddr, buf, sizeof(buf));
+                   QString res = QString::fromLocal8Bit(buf);
+                   auto it = clients.find(res);
+                   if (it != clients.end())
+                   {
+                       mySocket->writeDatagram(newbuffer, it.value().realIpAddress, senderPort);
+                       qDebug() << res;
+                       type = "traffic";
+                   }
+                   else
+                   {
+                       qDebug() << "No user with this IP";
+                   }
+
+               }
+               else
+               {
+                   qDebug() << "non IPv4 packet";
+               }
+           }
        }
         qDebug() << sender.toString() << "  " << senderPort << "  " << type;
 
@@ -108,10 +129,9 @@ void MyServer::handshake(QString str,QHostAddress sender,quint16 senderPort)
         {
             //TODO:modificate public key firstly
             QString key  = paramKey[1];
-            QString ip = giveIPAddress();
-            addrs.insert(ip, sender.toString());
-            clients.insert(paramId[1].toInt(), Client(key,ip));
-            QByteArray Data = buildParameters(ip);
+            QString localIP = giveIPAddress();
+            clients.insert(localIP, Client(key,sender));
+            QByteArray Data = buildParameters(localIP);
             for(int i =0; i<3; i++)
              {  mySocket->writeDatagram(Data, sender, senderPort);
                   qDebug()<<Data;

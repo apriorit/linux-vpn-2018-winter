@@ -19,16 +19,20 @@
 #include <linux/if_tun.h>
 #include "QMap"
 #include <linux/ip.h>
+#include <linux/ipv6.h>
 #include <QQueue>
+#include <sstream>
+#include <iostream>
+
 
 struct Client
 {
     QString publicKey;
-    QString ipAddress;
-    Client(QString pKey,QString ip)
+    QHostAddress realIpAddress;
+    Client(QString pKey,QHostAddress realIP)
     {
-    publicKey = pKey;
-    ipAddress = ip;
+        publicKey = pKey;
+        realIpAddress = realIP;
     }
 };
 
@@ -53,11 +57,10 @@ public slots:
 private:
 
     QUdpSocket *mySocket;
-    QMap<int,Client> clients;
+    QMap<QString,Client> clients;
     int publicKey;
     int interface;
     QQueue<std::string> ipPool;
-    QMap<QString,QString> addrs;
 };
 
 #endif // MYSERVER_H
