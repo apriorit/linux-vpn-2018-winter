@@ -98,10 +98,15 @@ public class MyVpnService extends VpnService implements Handler.Callback {
         // Handler to mark as connected once onEstablish is called.
         connection.setConfigureIntent(mConfigureIntent);
         connection.setOnEstablishListener(new VpnConnection.OnEstablishListener() {
-            public void onEstablish(ParcelFileDescriptor tunInterface) {
-                mHandler.sendEmptyMessage(R.string.connected);
-                mConnectingThread.compareAndSet(thread, null);
-                setConnection(new Connection(thread, tunInterface));
+            public void onEstablish(ParcelFileDescriptor tunInterface, String message) {
+                if(message.equals("Error"))
+                    mHandler.sendEmptyMessage(R.string.Errors);
+                else{
+                    mHandler.sendEmptyMessage(R.string.connected);
+                    mConnectingThread.compareAndSet(thread, null);
+                    setConnection(new Connection(thread, tunInterface));
+                }
+
             }
         });
         thread.start();

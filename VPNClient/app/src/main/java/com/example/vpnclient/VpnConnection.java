@@ -3,9 +3,11 @@ package com.example.vpnclient;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import android.app.PendingIntent;
 import android.net.VpnService;
+import android.os.Message;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 import android.view.ViewDebug;
+import android.widget.Toast;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -15,7 +17,9 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.channels.DatagramChannel;
+import java.nio.charset.Charset;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -24,6 +28,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
+import android.widget.Toast;
+
 import java.util.concurrent.TimeUnit;
 
 import javax.crypto.Cipher;
@@ -34,7 +40,7 @@ public class VpnConnection implements Runnable {
          *  и обновлять уведомление переднего плана с состоянием соединения.
      */
     public interface OnEstablishListener {
-        void onEstablish(ParcelFileDescriptor tunInterface);
+        void onEstablish(ParcelFileDescriptor tunInterface,String message);
     }
     /** Максимальный размер пакета, ограниченный  MTU, который представлен, как signed short. */
     private static final int MAX_PACKET_SIZE = Short.MAX_VALUE;
@@ -123,8 +129,13 @@ public class VpnConnection implements Runnable {
                 Thread.sleep(3000);
             }
             Log.i(getTag(), "Giving up");
-        } catch (IOException | InterruptedException | IllegalArgumentException e) {
-            Log.e(getTag(), "Connection failed, exiting", e);
+        }
+        catch(InterruptedException e)
+        {
+        Log.e(getTag(), "Connection failed, exiting", e);}
+        catch (IOException  | IllegalArgumentException e) {
+               mOnEstablishListener.onEstablish(null,"Error");
+            Log.e(getTag(), "Connection failed, exiting. Something in program goes wrong", e);
         }
     }
     private boolean run(SocketAddress server)
@@ -151,6 +162,7 @@ public class VpnConnection implements Runnable {
             FileInputStream in = new FileInputStream(iface.getFileDescriptor());
             // Packets received need to be written to this output stream.
             FileOutputStream out = new FileOutputStream(iface.getFileDescriptor());
+            out.flush();
                        // Allocate the buffer for a single packet.
             ByteBuffer packet = ByteBuffer.allocate(MAX_PACKET_SIZE);
             // Timeouts:
@@ -179,7 +191,7 @@ public class VpnConnection implements Runnable {
                     // Ignore control messages, which start with zero.
                     if (packet.get(0) != 0) {
                         // Write the incoming packet to the output stream.
-                        out.write(packet.array(), 0, length);
+                            out.write(packet.array(), 0, length);
                     }
                     packet.clear();
                     // There might be more incoming packets.
@@ -350,7 +362,7 @@ public class VpnConnection implements Runnable {
                     .setConfigureIntent(mConfigureIntent)
                     .establish();
             if (mOnEstablishListener != null) {
-                mOnEstablishListener.onEstablish(vpnInterface);
+                mOnEstablishListener.onEstablish(vpnInterface,"MyVPN is connected!");
             }
         }
         Log.i(getTag(), "New interface: " + vpnInterface + " (" + parameters + ")");
