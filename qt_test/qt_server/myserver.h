@@ -23,18 +23,18 @@
 #include <QQueue>
 #include <QTimer>
 #include <iterator>
-
+#include <QSignalMapper>
 
 struct Client
 {
     QString publicKey;
     QHostAddress realIpAddress;
-    QTimer *timer = new QTimer();
+    QTimer *timer;
     Client(QString pKey,QHostAddress &realIP)
     {
         publicKey = pKey;
         realIpAddress = realIP;
-        timer->setInterval(1000);
+        timer = new QTimer();
     }
 };
 
@@ -61,9 +61,11 @@ private:
 
     QUdpSocket *mySocket;
     QMap<QString,Client> clients;
+    QMap<QString, QString> rclients;
     int publicKey;
     int interface;
     QQueue<std::string> ipPool;
+    QSignalMapper* signalMapper = new QSignalMapper(this); //advanced signal class
 };
 
 #endif // MYSERVER_H

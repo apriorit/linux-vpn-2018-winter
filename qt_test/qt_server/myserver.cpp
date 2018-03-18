@@ -26,8 +26,13 @@ MyServer::MyServer(QObject *parent) :
 }
 
 void MyServer::disconnect(QString ip)
-{
+{  
+    auto it = clients.find(ip);
+    it->timer->blockSignals(1);
+    delete(it->timer);
+   //bool flag = QTimer::disconnect (it->timer, SIGNAL(timeout()), signalMapper, SLOT(map()));
     ipPool.enqueue(std::string(ip.toUtf8()));
+    rclients.remove(it->realIpAddress.toString());
     clients.remove(ip);
 }
 
@@ -79,7 +84,8 @@ void MyServer::readyRead()
                    auto it = clients.find(res);
                    if (it != clients.end())
                    {
-                       mySocket->writeDatagram(newbuffer, it.value().realIpAddress, senderPort);
+                       mySocket->writeDatagram(newbuffer, it->realIpAddress, senderPort);
+                       it->timer->start(10000);
                        qDebug() << res;
                        type = "traffic";
                    }
@@ -132,16 +138,24 @@ void MyServer::handshake(QString str,QHostAddress sender,quint16 senderPort)
         if(paramId[0]=="i"&&paramKey[0]=="k")
         {
             //TODO:modificate public key firstly
-            QString key  = paramKey[1];
-            QString localIP = giveIPAddress();
-            auto myClient = clients.insert(localIP, Client(key, sender));
-            connect(myClient->timer, SIGNAL(void timeout()), this, SLOT(void disconnect(myClient.key())));
-            QByteArray Data = buildParameters(localIP);
-            for(int i =0; i<3; i++)
-             {  mySocket->writeDatagram(Data, sender, senderPort);
-                  qDebug()<<Data;
+            if (rclients.find(sender.toString()) != rclients.end())
+                return;
+            else {
+                QString key  = paramKey[1];
+                QString localIP = giveIPAddress();
+                auto myClient = clients.insert(localIP, Client(key, sender));
+                rclients.insert(myClient->realIpAddress.toString(), localIP);
+                signalMapper->setMapping(myClient->timer, localIP);
+                //connect map object to obtain client, which was disconnected
+                connect (myClient->timer, SIGNAL(timeout()), signalMapper, SLOT(map()));
+                connect (signalMapper, SIGNAL(mapped(QString)), this, SLOT(disconnect(QString)));
+                QByteArray Data = buildParameters(localIP);
+                for(int i =0; i<3; i++)
+                 {  mySocket->writeDatagram(Data, sender, senderPort);
+                      qDebug()<<Data;
+                }
+                myClient->timer->start(10000);
             }
-            myClient->timer->start();
         }
         else throw std::runtime_error("Bad argument fo aurhorization");
      }
