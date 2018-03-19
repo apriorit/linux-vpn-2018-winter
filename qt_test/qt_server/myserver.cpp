@@ -28,7 +28,9 @@ MyServer::MyServer(QObject *parent) :
 void MyServer::disconnect(QString ip)
 {  
     auto it = clients.find(ip);
-    it->timer->blockSignals(1);
+    if (it == clients.end())
+        return;
+    //it->timer->blockSignals(1);
     delete(it->timer);
    //bool flag = QTimer::disconnect (it->timer, SIGNAL(timeout()), signalMapper, SLOT(map()));
     ipPool.enqueue(std::string(ip.toUtf8()));
@@ -84,7 +86,7 @@ void MyServer::readyRead()
                    auto it = clients.find(res);
                    if (it != clients.end())
                    {
-                       mySocket->writeDatagram(newbuffer, it->realIpAddress, senderPort);
+                       mySocket->writeDatagram(newbuffer, it->realIpAddress, it->m_port);
                        it->timer->start(10000);
                        qDebug() << res;
                        type = "traffic";
@@ -101,7 +103,7 @@ void MyServer::readyRead()
                }
            }
        }
-        qDebug() << sender.toString() << "  " << senderPort << "  " << type;
+        qDebug() << sender << "  " << senderPort << "  " << type;
 
     }
     buffer.clear();
@@ -137,13 +139,17 @@ void MyServer::handshake(QString str,QHostAddress sender,quint16 senderPort)
      {
         if(paramId[0]=="i"&&paramKey[0]=="k")
         {
-            //TODO:modificate public key firstly
-            if (rclients.find(sender.toString()) != rclients.end())
+            auto it = rclients.find(sender.toString());
+            if (it != rclients.end() )
+            {
+                if (senderPort == clients.find(it.value())->m_port)
                 return;
-            else {
+            }
+            else
+            {
                 QString key  = paramKey[1];
                 QString localIP = giveIPAddress();
-                auto myClient = clients.insert(localIP, Client(key, sender));
+                auto myClient = clients.insert(localIP, Client(key, sender, senderPort));
                 rclients.insert(myClient->realIpAddress.toString(), localIP);
                 signalMapper->setMapping(myClient->timer, localIP);
                 //connect map object to obtain client, which was disconnected

@@ -30,11 +30,13 @@ struct Client
     QString publicKey;
     QHostAddress realIpAddress;
     QTimer *timer;
-    Client(QString pKey,QHostAddress &realIP)
+    qint64 m_port;
+    Client(QString pKey,QHostAddress &realIP, qint64 port)
     {
         publicKey = pKey;
         realIpAddress = realIP;
         timer = new QTimer();
+        m_port = port;
     }
 };
 
