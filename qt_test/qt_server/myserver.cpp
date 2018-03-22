@@ -7,13 +7,13 @@ MyServer::MyServer(QObject *parent) :
 {
     // create a QUDP socket
     mySocket = new QUdpSocket(this);
-
-    int j = 2;
-    for (int i = 0; i < 254; i++)
-    {
-        ipPool.enqueue("10.0.0." + std::to_string(j));
-        j++;
-    }
+    manager = new IpManager();
+//    int j = 2;
+//    for (int i = 0; i < 254; i++)
+//    {
+//        ipPool.enqueue("10.0.0." + std::to_string(j));
+//        j++;
+//    }
 
     // The most common way to use QUdpSocket class is
     // to bind to an address and port using bind()
@@ -33,7 +33,8 @@ void MyServer::disconnect(QString ip)
     //it->timer->blockSignals(1);
     delete(it->timer);
    //bool flag = QTimer::disconnect (it->timer, SIGNAL(timeout()), signalMapper, SLOT(map()));
-    ipPool.enqueue(std::string(ip.toUtf8()));
+    manager->returnIPAddress(std::string(ip.toUtf8()));
+    //ipPool.enqueue(std::string(ip.toUtf8()));
     rclients.remove(it->realIpAddress.toString());
     clients.remove(ip);
 }
@@ -148,7 +149,7 @@ void MyServer::handshake(QString str,QHostAddress sender,quint16 senderPort)
             else
             {
                 QString key  = paramKey[1];
-                QString localIP = giveIPAddress();
+                QString localIP = manager->giveIPAddress();
                 auto myClient = clients.insert(localIP, Client(key, sender, senderPort));
                 rclients.insert(myClient->realIpAddress.toString(), localIP);
                 signalMapper->setMapping(myClient->timer, localIP);
@@ -178,11 +179,11 @@ int MyServer::createIdentificator()
 {
 return 123;
 }
-QString MyServer::giveIPAddress()
-{
+//QString MyServer::giveIPAddress()
+//{
 
-    return QString::fromStdString(ipPool.dequeue());
-}
+//    return QString::fromStdString(ipPool.dequeue());
+//}
 
 QByteArray MyServer:: buildParameters(QString ipAddress)
 {

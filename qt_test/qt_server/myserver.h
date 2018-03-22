@@ -24,6 +24,7 @@
 #include <QTimer>
 #include <iterator>
 #include <QSignalMapper>
+#include <ipmanager.h>
 
 struct Client
 {
@@ -52,7 +53,9 @@ public:
      QString giveIPAddress();
      void handshake(QString str,QHostAddress sender,quint16 senderPort);
      int get_interface(char *name);
-     ~MyServer(){ close(interface);}
+     IpManager *manager;
+     ~MyServer(){ close(interface);
+                 delete(manager);}
 
 signals:
 
@@ -66,7 +69,7 @@ private:
     QMap<QString, QString> rclients;
     int publicKey;
     int interface;
-    QQueue<std::string> ipPool;
+//    QQueue<std::string> ipPool;
     QSignalMapper* signalMapper = new QSignalMapper(this); //advanced signal class
 };
 
