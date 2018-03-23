@@ -18,7 +18,9 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 TEMPLATE = app
 SOURCES += main.cpp \
-    myserver.cpp
+    myserver.cpp \
+    ipmanager.cpp
 
 HEADERS += \
-    myserver.h
+    myserver.h \
+    ipmanager.h

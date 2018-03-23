@@ -51,9 +51,11 @@ OBJECTS_DIR   = ./
 ####### Files
 
 SOURCES       = ../qt_server/main.cpp \
-		../qt_server/myserver.cpp moc_myserver.cpp
+		../qt_server/myserver.cpp \
+		../qt_server/ipmanager.cpp moc_myserver.cpp
 OBJECTS       = main.o \
 		myserver.o \
+		ipmanager.o \
 		moc_myserver.o
 DIST          = ../../../Qt/5.10.0/gcc_64/mkspecs/features/spec_pre.prf \
 		../../../Qt/5.10.0/gcc_64/mkspecs/common/unix.conf \
@@ -218,6 +220,7 @@ DIST          = ../../../Qt/5.10.0/gcc_64/mkspecs/features/spec_pre.prf \
 		../../../Qt/5.10.0/gcc_64/mkspecs/features/qt_config.prf \
 		../../../Qt/5.10.0/gcc_64/mkspecs/linux-g++/qmake.conf \
 		../../../Qt/5.10.0/gcc_64/mkspecs/features/spec_post.prf \
+		../qt_server/.qmake.stash \
 		../../../Qt/5.10.0/gcc_64/mkspecs/features/exclusive_builds.prf \
 		../../../Qt/5.10.0/gcc_64/mkspecs/features/toolchain.prf \
 		../../../Qt/5.10.0/gcc_64/mkspecs/features/default_pre.prf \
@@ -235,8 +238,10 @@ DIST          = ../../../Qt/5.10.0/gcc_64/mkspecs/features/spec_pre.prf \
 		../../../Qt/5.10.0/gcc_64/mkspecs/features/exceptions.prf \
 		../../../Qt/5.10.0/gcc_64/mkspecs/features/yacc.prf \
 		../../../Qt/5.10.0/gcc_64/mkspecs/features/lex.prf \
-		../qt_server/qt_server.pro ../qt_server/myserver.h ../qt_server/main.cpp \
-		../qt_server/myserver.cpp
+		../qt_server/qt_server.pro ../qt_server/myserver.h \
+		../qt_server/ipmanager.h ../qt_server/main.cpp \
+		../qt_server/myserver.cpp \
+		../qt_server/ipmanager.cpp
 QMAKE_TARGET  = QUdpSocket
 DESTDIR       = 
 TARGET        = QUdpSocket
@@ -411,6 +416,7 @@ Makefile: ../qt_server/qt_server.pro ../../../Qt/5.10.0/gcc_64/mkspecs/linux-g++
 		../../../Qt/5.10.0/gcc_64/mkspecs/features/qt_config.prf \
 		../../../Qt/5.10.0/gcc_64/mkspecs/linux-g++/qmake.conf \
 		../../../Qt/5.10.0/gcc_64/mkspecs/features/spec_post.prf \
+		.qmake.stash \
 		../../../Qt/5.10.0/gcc_64/mkspecs/features/exclusive_builds.prf \
 		../../../Qt/5.10.0/gcc_64/mkspecs/features/toolchain.prf \
 		../../../Qt/5.10.0/gcc_64/mkspecs/features/default_pre.prf \
@@ -595,6 +601,7 @@ Makefile: ../qt_server/qt_server.pro ../../../Qt/5.10.0/gcc_64/mkspecs/linux-g++
 ../../../Qt/5.10.0/gcc_64/mkspecs/features/qt_config.prf:
 ../../../Qt/5.10.0/gcc_64/mkspecs/linux-g++/qmake.conf:
 ../../../Qt/5.10.0/gcc_64/mkspecs/features/spec_post.prf:
+.qmake.stash:
 ../../../Qt/5.10.0/gcc_64/mkspecs/features/exclusive_builds.prf:
 ../../../Qt/5.10.0/gcc_64/mkspecs/features/toolchain.prf:
 ../../../Qt/5.10.0/gcc_64/mkspecs/features/default_pre.prf:
@@ -630,8 +637,8 @@ distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents ../../../Qt/5.10.0/gcc_64/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents ../qt_server/myserver.h $(DISTDIR)/
-	$(COPY_FILE) --parents ../qt_server/main.cpp ../qt_server/myserver.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents ../qt_server/myserver.h ../qt_server/ipmanager.h $(DISTDIR)/
+	$(COPY_FILE) --parents ../qt_server/main.cpp ../qt_server/myserver.cpp ../qt_server/ipmanager.cpp $(DISTDIR)/
 
 
 clean: compiler_clean 
@@ -737,6 +744,15 @@ moc_myserver.cpp: ../../../Qt/5.10.0/gcc_64/include/QtCore/QObject \
 		../../../Qt/5.10.0/gcc_64/include/QtCore/qsharedpointer_impl.h \
 		../../../Qt/5.10.0/gcc_64/include/QtNetwork/qhostaddress.h \
 		../../../Qt/5.10.0/gcc_64/include/QtCore/QMap \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/QQueue \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qqueue.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/QTimer \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qtimer.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qbasictimer.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/QSignalMapper \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qsignalmapper.h \
+		../qt_server/ipmanager.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/QString \
 		../qt_server/myserver.h \
 		moc_predefs.h \
 		../../../Qt/5.10.0/gcc_64/bin/moc
@@ -830,7 +846,16 @@ main.o: ../qt_server/main.cpp ../../../Qt/5.10.0/gcc_64/include/QtCore/QCoreAppl
 		../../../Qt/5.10.0/gcc_64/include/QtCore/qsharedpointer.h \
 		../../../Qt/5.10.0/gcc_64/include/QtCore/qsharedpointer_impl.h \
 		../../../Qt/5.10.0/gcc_64/include/QtNetwork/qhostaddress.h \
-		../../../Qt/5.10.0/gcc_64/include/QtCore/QMap
+		../../../Qt/5.10.0/gcc_64/include/QtCore/QMap \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/QQueue \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qqueue.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/QTimer \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qtimer.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qbasictimer.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/QSignalMapper \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qsignalmapper.h \
+		../qt_server/ipmanager.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/QString
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o ../qt_server/main.cpp
 
 myserver.o: ../qt_server/myserver.cpp ../qt_server/myserver.h \
@@ -904,8 +929,63 @@ myserver.o: ../qt_server/myserver.cpp ../qt_server/myserver.h \
 		../../../Qt/5.10.0/gcc_64/include/QtCore/qsharedpointer.h \
 		../../../Qt/5.10.0/gcc_64/include/QtCore/qsharedpointer_impl.h \
 		../../../Qt/5.10.0/gcc_64/include/QtNetwork/qhostaddress.h \
-		../../../Qt/5.10.0/gcc_64/include/QtCore/QMap
+		../../../Qt/5.10.0/gcc_64/include/QtCore/QMap \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/QQueue \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qqueue.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/QTimer \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qtimer.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qbasictimer.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/QSignalMapper \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qsignalmapper.h \
+		../qt_server/ipmanager.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/QString
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o myserver.o ../qt_server/myserver.cpp
+
+ipmanager.o: ../qt_server/ipmanager.cpp ../qt_server/ipmanager.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/QQueue \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qqueue.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qlist.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qalgorithms.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qglobal.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qconfig-bootstrapped.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qconfig.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qtcore-config.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qsystemdetection.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qprocessordetection.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qcompilerdetection.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qtypeinfo.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qsysinfo.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qlogging.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qflags.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qatomic.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qbasicatomic.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qatomic_bootstrap.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qgenericatomic.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qatomic_cxx11.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qatomic_msvc.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qglobalstatic.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qmutex.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qnumeric.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qversiontagging.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qiterator.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qrefcount.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qarraydata.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qhashfunctions.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qstring.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qchar.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qbytearray.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qnamespace.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qstringliteral.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qstringalgorithms.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qstringview.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qstringbuilder.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qpair.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qbytearraylist.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qstringlist.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qregexp.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/qstringmatcher.h \
+		../../../Qt/5.10.0/gcc_64/include/QtCore/QString
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o ipmanager.o ../qt_server/ipmanager.cpp
 
 moc_myserver.o: moc_myserver.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_myserver.o moc_myserver.cpp

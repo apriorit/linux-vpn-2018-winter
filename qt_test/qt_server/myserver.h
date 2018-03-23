@@ -18,15 +18,26 @@
 #include <net/if.h>
 #include <linux/if_tun.h>
 #include "QMap"
+#include <linux/ip.h>
+#include <linux/ipv6.h>
+#include <QQueue>
+#include <QTimer>
+#include <iterator>
+#include <QSignalMapper>
+#include <ipmanager.h>
 
 struct Client
 {
     QString publicKey;
-    QString ipAddress;
-    Client(QString pKey,QString ip)
+    QHostAddress realIpAddress;
+    QTimer *timer;
+    qint64 m_port;
+    Client(QString pKey,QHostAddress &realIP, qint64 port)
     {
-    publicKey = pKey;
-    ipAddress = ip;
+        publicKey = pKey;
+        realIpAddress = realIP;
+        timer = new QTimer();
+        m_port = port;
     }
 };
 
@@ -42,19 +53,24 @@ public:
      QString giveIPAddress();
      void handshake(QString str,QHostAddress sender,quint16 senderPort);
      int get_interface(char *name);
-
-     ~MyServer(){ close(interface);}
+     IpManager *manager;
+     ~MyServer(){ close(interface);
+                 delete(manager);}
 
 signals:
 
 public slots:
     void readyRead();
+    void disconnect(QString ip);
 private:
 
     QUdpSocket *mySocket;
-    QMap<int,Client> clients;
+    QMap<QString,Client> clients;
+    QMap<QString, QString> rclients;
     int publicKey;
     int interface;
+//    QQueue<std::string> ipPool;
+    QSignalMapper* signalMapper = new QSignalMapper(this); //advanced signal class
 };
 
 #endif // MYSERVER_H
