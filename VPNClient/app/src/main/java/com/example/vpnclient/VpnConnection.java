@@ -1,38 +1,31 @@
 package com.example.vpnclient;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import android.app.PendingIntent;
 import android.net.VpnService;
-import android.os.Message;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
-import android.view.ViewDebug;
-import android.widget.Toast;
+
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.math.BigInteger;
+import java.lang.reflect.Array;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.DatagramChannel;
-import java.nio.charset.Charset;
-import java.security.Key;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
-import android.widget.Toast;
 
+
+import java.nio.charset.Charset;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import javax.crypto.Cipher;
 
 public class VpnConnection implements Runnable {
     /**
@@ -71,10 +64,8 @@ public class VpnConnection implements Runnable {
     private final int mConnectionId;
     private final String mServerName;
     private final int mServerPort;
-    private final Key mPublicKey;
-    private final Key mPrivateKey;
     private int Idendificator;
-    private Key mServerKey;
+    private CryptoClient myCrypto;
     private PendingIntent mConfigureIntent;
     private OnEstablishListener mOnEstablishListener;
     public VpnConnection(final VpnService service, final int connectionId,
@@ -83,21 +74,10 @@ public class VpnConnection implements Runnable {
         mConnectionId = connectionId;
         mServerName = serverName;
         mServerPort= serverPort;
-        Key publicKey = null;
-        Key privateKey = null;
-        //Java is not C++, there is a garbage collector, so i can do it
-        try {
-            KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
-            kpg.initialize(1024);
-            KeyPair kp = kpg.genKeyPair();
-            publicKey = kp.getPublic();
-            privateKey = kp.getPrivate();
-        } catch (Exception e) {
-            Log.e("Crypto", "RSA key pair error");
-        }
-        mPublicKey = publicKey;
-        mPrivateKey = privateKey;
+        myCrypto = new CryptoClient();
+
     }
+
     /**
      * Optionally, set an intent to configure the VPN. This is {@code null} by default.
      */
@@ -140,6 +120,7 @@ public class VpnConnection implements Runnable {
     }
     private boolean run(SocketAddress server)
             throws IOException, InterruptedException, IllegalArgumentException {
+
         ParcelFileDescriptor iface = null;
         boolean connected = false;
         // Create a DatagramChannel as the VPN tunnel.
@@ -153,7 +134,7 @@ public class VpnConnection implements Runnable {
             // For simplicity, we use the same thread for both reading and
             // writing. Here we put the tunnel into non-blocking mode.
             tunnel.configureBlocking(false);
-
+            myCrypto.generateKeys();
             // Authenticate and configure the virtual network interface.
             iface = handshake(tunnel);
             // Now we are connected. Set the flag.
@@ -177,8 +158,12 @@ public class VpnConnection implements Runnable {
                 // Read the outgoing packet from the input stream.
                 int length = in.read(packet.array());
                 if (length > 0) {
+                    byte [] encrypt = myCrypto.encryptAES(Arrays.copyOfRange(packet.array(),0,length));
+                    packet.clear();
+                    packet.put((byte)2).put(encrypt);
+                    packet.position(0);
                     // Write the outgoing packet to the tunnel.
-                    packet.limit(length);
+                    packet.limit(encrypt.length+1);
                     tunnel.write(packet);
                     packet.clear();
                     // There might be more outgoing packets.
@@ -189,9 +174,10 @@ public class VpnConnection implements Runnable {
                 length = tunnel.read(packet);
                 if (length > 0) {
                     // Ignore control messages, which start with zero.
-                    if (packet.get(0) != 0) {
+                    if (packet.get(0) == 2 ) {
+                       byte[] decrypt =  myCrypto.decryptAES(Arrays.copyOfRange(packet.array(),1,length));
                         // Write the incoming packet to the output stream.
-                            out.write(packet.array(), 0, length);
+                            out.write(decrypt, 0, decrypt.length);
                     }
                     packet.clear();
                     // There might be more incoming packets.
@@ -234,23 +220,12 @@ public class VpnConnection implements Runnable {
     }
     private ParcelFileDescriptor handshake(DatagramChannel tunnel)
             throws IOException, InterruptedException {
-     /*    To build a secured tunnel, we should perform mutual authentication
-         and exchange session keys for encryption.
-         Our handshaking protocol:
-        Identification:
-        Client: 00
-        Server : 0i[Identificator]
-        Authentication:
-         //exchange keys
-         //mutual authentication
-         Allocate the buffer for handshaking. We have a hardcoded maximum
-        handshake size of 1024 bytes, which should be enough for demo
-         purposes.*/
+
 
      //1. Send request to connect a new client
         ByteBuffer packet = ByteBuffer.allocate(1024);
         // Control messages always start with zero.
-        packet.put( (byte)0).put("NewClient".getBytes()).flip();
+        packet.put( (byte)0).put("NewClient".getBytes()).put(myCrypto.getPublicRSAKey()).flip();
         // Send the request several times in case of packet loss.
         for (int i = 0; i < 3; ++i) {
             packet.position(0);
@@ -266,34 +241,33 @@ public class VpnConnection implements Runnable {
             packet.clear();
             int length = tunnel.read(packet);
             if (length > 0 && packet.get(0) == 0) {
-                setIdendificator(new String(packet.array(), 1, length - 1, US_ASCII).trim());
-                //3. Send key
-                sendKey(tunnel);
-                //4.receiveParameters
-                String parameters = receiveParameters(tunnel);
+                String msgFromServer = new String(packet.array(), 1, length - 1,"UTF-8").trim();
+                if(msgFromServer.equals("Error"))
+                    throw new IOException("Server did not allow connection");
+                if(msgFromServer.charAt(0)=='k') {
+                    setData(Arrays.copyOfRange(packet.array(),2,length));
+                    //3. Send key
+                    sendKey(tunnel);
+                    //4.receiveParameters
+                    String parameters = receiveParameters(tunnel);
                     return configure(parameters);
+                }
             }
         }
         throw new IOException("Timed out");
     }
-    private void setIdendificator(String strInd) throws IllegalArgumentException
-    {
-        String[] fields = strInd.split(",");
+    private void setData(byte[] str) throws IllegalArgumentException {
         try {
-            if (fields[0].charAt(0) == 'i') {
-                Idendificator = Integer.parseInt(fields[1]);
+            myCrypto.setServerPublicRSAKey(str);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Bad server key.");
             }
         }
-     catch (NumberFormatException e) {
-        throw new IllegalArgumentException("Bad identificator.");
-    }
-    }
+
     private void sendKey(DatagramChannel tunnel) throws IOException,InterruptedException
     {
         ByteBuffer packet = ByteBuffer.allocate(1024);
-
-        packet.put((byte)0).put("i,".getBytes()).put(Integer.toString(Idendificator).getBytes())
-                .put(" k,".getBytes()).put(mPublicKey.getEncoded()).flip();
+        packet.put((byte)1).put("aes".getBytes()).put(myCrypto.ecryptRSA(myCrypto.getAESKey())).flip();
         // Send the secret several times in case of packet loss.
         for (int i = 0; i < 3; ++i) {
             packet.position(0);
@@ -308,8 +282,9 @@ public class VpnConnection implements Runnable {
             packet.clear();
             int length = tunnel.read(packet);
             Log.d(getTag(),packet.toString());
-            if (length > 0 && packet.get(0) == 0&&packet.get(1)=='p'){
-                return (new String(packet.array(), 2, length - 2, US_ASCII).trim());
+            if (length > 0 && packet.get(0) == 1&&packet.get(1)=='p'){
+                byte  decrypt[]  = myCrypto.decryptRSA(Arrays.copyOfRange(packet.array(),2,length));
+                     return (new String(decrypt,"UTF-8"));
             }
         }
         throw new IOException("Timed out");
@@ -333,22 +308,6 @@ public class VpnConnection implements Runnable {
                     case 'd':
                         builder.addDnsServer(fields[1]);
                         break;
-                    case 's':
-                        builder.addSearchDomain(fields[1]);
-                        break;
-                    /*case 'k':
-                    {
-                        try {
-                            X509EncodedKeySpec ks = new X509EncodedKeySpec(fields[1].getBytes());
-                            KeyFactory kf = KeyFactory.getInstance("RSA");
-                            mServerKey = kf.generatePublic(ks);
-                        }
-                        catch(NoSuchAlgorithmException e)
-                        { throw new IllegalArgumentException(" Bad algorithm");}
-                        catch (InvalidKeySpecException e)
-                        {throw new IllegalArgumentException(" Bad key");}
-                    }
-                        break;*/
                 }
             } catch (NumberFormatException e) {
                 throw new IllegalArgumentException("Bad parameter: " + parameter);
