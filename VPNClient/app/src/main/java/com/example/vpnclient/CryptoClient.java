@@ -38,7 +38,7 @@ public class CryptoClient {
         }
         try {
             KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
-            kpg.initialize(3072);
+            kpg.initialize(2048);
             KeyPair kp = kpg.genKeyPair();
             publicKey = kp.getPublic();
             privateKey = kp.getPrivate();
@@ -64,7 +64,7 @@ public class CryptoClient {
         return publicKey.getEncoded();
     }
 
-    public byte[] encryptAES (String plainText)
+    public byte[] encryptAES (byte[] plainText)
     {
         byte[] resByte = null;
         try {
@@ -72,10 +72,11 @@ public class CryptoClient {
             SecureRandom srandom  = new SecureRandom();
             srandom.nextBytes(iv);
             IvParameterSpec ivspec = new IvParameterSpec(iv);
+
             byte[] encodedBytes = null;
             Cipher c = Cipher.getInstance("AES/CFB8/NoPadding");
             c.init(Cipher.ENCRYPT_MODE, sKey,ivspec);
-            encodedBytes = c.doFinal(plainText.getBytes());
+            encodedBytes = c.doFinal(plainText);
             resByte  = new byte[iv.length + encodedBytes.length];
             System.arraycopy(iv, 0, resByte, 0, iv.length);
             System.arraycopy(encodedBytes, 0, resByte, iv.length, encodedBytes.length);
@@ -113,23 +114,22 @@ public class CryptoClient {
     {
         return sKey.getEncoded();
     }
-    public byte[] ecryptRSA(String plainText) {
-        byte[] encodedBytes = null;
+    public byte[] ecryptRSA(byte[] plainText) {
         try {
-            Cipher c = Cipher.getInstance("RSA");
+            Cipher c =  Cipher.getInstance("RSA/ECB/OAEPWithSHA-1AndMGF1Padding");;
             c.init(Cipher.ENCRYPT_MODE, serverPublicKey);
-            encodedBytes = c.doFinal(plainText.getBytes());
+            return c.doFinal(plainText,0,plainText.length);
         } catch (Exception e) {
             Log.e("Crypto", "RSA encryption error");
         }
         // convert to String Base64.encodeToString(encodedBytes, Base64.DEFAULT));
-        return encodedBytes;
+        return null;
     }
     public byte [] decryptRSA(byte[] encryptText)
     {
         byte[] decodedBytes = null;
         try {
-            Cipher c = Cipher.getInstance("RSA");
+            Cipher c = Cipher.getInstance("RSA/ECB/OAEPWithSHA-1AndMGF1Padding");
             c.init(Cipher.DECRYPT_MODE, privateKey);
             decodedBytes = c.doFinal(encryptText);
         } catch (Exception e) {
