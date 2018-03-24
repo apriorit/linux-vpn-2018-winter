@@ -10,6 +10,7 @@ public:
 
     QString giveIPAddress();
     void returnIPAddress(std::string ip);
+    bool isEmpty();
 private:
     QQueue<std::string> ipPool;
 

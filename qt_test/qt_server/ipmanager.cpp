@@ -17,3 +17,7 @@ void IpManager::returnIPAddress(std::string ip)
 {
     ipPool.enqueue(ip);
 }
+bool IpManager::isEmpty()
+{
+    return ipPool.isEmpty();
+}
