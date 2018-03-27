@@ -18,7 +18,7 @@
 #include <linux/if_tun.h>
 #include "QMap"
 #include <linux/ip.h>
-//#include <linux/ipv6.h>
+#include <linux/ipv6.h>
 #include <QQueue>
 #include <QTimer>
 #include <iterator>
@@ -44,7 +44,8 @@ private:
     //real ip , virtual ip
     QMap<QString, QString> rclients;
     int interface;
-    QSignalMapper* signalMapper; //advanced signal class
+//    QSignalMapper* signalMapper; //advanced signal class
+    QSignalMapper* signalMapper;
     IpManager *manager;
     CryptoServer* myCrypto;
 private:

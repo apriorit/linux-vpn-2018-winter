@@ -1,5 +1,6 @@
 #ifndef CLIENT_H
 #define CLIENT_H
+#include <QTimer>
 struct Client
 {
     CryptoPP::RSA::PublicKey publicKey;

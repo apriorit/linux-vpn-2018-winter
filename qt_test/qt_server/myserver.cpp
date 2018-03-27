@@ -34,7 +34,13 @@ void MyServer::disconnect(QString ip)
     //it->timer->blockSignals(1);
     delete(it->timer);
    //bool flag = QTimer::disconnect (it->timer, SIGNAL(timeout()), signalMapper, SLOT(map()));
-    manager->returnIPAddress(std::string(ip.toUtf8()));
+    try {
+        manager->returnIPAddress(std::string(ip.toUtf8()));
+     }
+    catch (std::logic_error &ex)
+    {
+        qDebug() << ex.what();
+    }
     //ipPool.enqueue(std::string(ip.toUtf8()));
     rclients.remove(it->realIpAddress.toString());
     clients.remove(ip);
@@ -49,14 +55,23 @@ QByteArray MyServer::getErrorMessage()
 }
 QMap<QString,Client>::iterator MyServer::addNewClient(const CryptoPP::RSA::PublicKey& key,const QHostAddress &sender, const quint16 &senderPort)
 {
-    QString localIP = manager->giveIPAddress();
-    QMap<QString,Client>::iterator myClient = clients.insert(localIP, Client(key, sender, senderPort));
+
+    QString localIP = "";
+    try {
+        localIP = manager->giveIPAddress();
+    }
+    catch (std::out_of_range &ex)
+    {
+        qDebug() << ex.what();
+        return NULL;
+    }
+    auto myClient = clients.insert(localIP, Client(key, sender, senderPort));
     rclients.insert(myClient->realIpAddress.toString(), localIP);
-    //signalMapper->setMapping(myClient->timer, localIP);
+   // signalMapper->setMapping(myClient->timer, localIP);
     //connect map object to obtain client, which was disconnected
-   // connect (myClient->timer, SIGNAL(timeout()), signalMapper, SLOT(map()));
-   // connect (signalMapper, SIGNAL(mapped(QString)), this, SLOT(disconnect(QString)));
-     // myClient->timer->start(10000);
+    //connect (myClient->timer, SIGNAL(timeout()), signalMapper, SLOT(map()));
+    //connect (signalMapper, SIGNAL(mapped(QString)), this, SLOT(disconnect(QString)));
+    //myClient->timer->start(10000);
     return myClient;
 }
 bool MyServer::clientIsRegistred(const QHostAddress& sender, const quint16& senderPort)
