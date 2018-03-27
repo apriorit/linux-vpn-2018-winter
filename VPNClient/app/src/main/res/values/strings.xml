@@ -1,8 +1,8 @@
 <resources>
-    <string name="app_name">VPNClient</string>
+    <string name="app_name">MyVPN</string>
     <string name="address">Address:</string>
-    <string name="connect">Connect</string>
-    <string name="disconnect">Disconnect</string>
+    <string name="on">on</string>
+    <string name="off">off</string>
     <string name="port">Port:</string>
     <string name="secret">Secret:</string>
 
