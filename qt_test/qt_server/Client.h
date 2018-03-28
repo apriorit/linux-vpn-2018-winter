@@ -1,6 +1,7 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 #include <QTimer>
+#include "myserver.h"
 struct Client
 {
     CryptoPP::RSA::PublicKey publicKey;
@@ -12,13 +13,12 @@ struct Client
     {
         publicKey = pKey;
         realIpAddress = realIP;
+        qDebug()<<errno;
         timer = new QTimer();
+        qDebug()<<errno;
         m_port = port;
     }
-    ~Client()
-    {
-        delete timer;
-    }
+
 
     void setAesKey(const QByteArray key)
     {

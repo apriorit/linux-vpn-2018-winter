@@ -20,6 +20,7 @@
 #include <linux/ip.h>
 #include <linux/ipv6.h>
 #include <QQueue>
+#include <QTimerEvent>
 #include <QTimer>
 #include <iterator>
 #include <QSignalMapper>
@@ -31,6 +32,7 @@ class MyServer : public QObject
 {
     Q_OBJECT
 public:
+
     explicit MyServer(QObject *parent = 0);
      ~MyServer();
     void prepareForWork();
