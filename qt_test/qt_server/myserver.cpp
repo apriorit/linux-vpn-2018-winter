@@ -31,9 +31,7 @@ void MyServer::disconnect(QString ip)
     auto it = clients.find(ip);
     if (it == clients.end())
         return;
-    //it->timer->blockSignals(1);
     delete(it->timer);
-   //bool flag = QTimer::disconnect (it->timer, SIGNAL(timeout()), signalMapper, SLOT(map()));
     try {
         manager->returnIPAddress(std::string(ip.toUtf8()));
      }
@@ -41,7 +39,6 @@ void MyServer::disconnect(QString ip)
     {
         qDebug() << ex.what();
     }
-    //ipPool.enqueue(std::string(ip.toUtf8()));
     rclients.remove(it->realIpAddress.toString());
     clients.remove(ip);
 }
@@ -67,18 +64,21 @@ QMap<QString,Client>::iterator MyServer::addNewClient(const CryptoPP::RSA::Publi
     }
     auto myClient = clients.insert(localIP, Client(key, sender, senderPort));
     rclients.insert(myClient->realIpAddress.toString(), localIP);
-   // signalMapper->setMapping(myClient->timer, localIP);
+    signalMapper->setMapping(myClient->timer, localIP);
     //connect map object to obtain client, which was disconnected
-    //connect (myClient->timer, SIGNAL(timeout()), signalMapper, SLOT(map()));
-    //connect (signalMapper, SIGNAL(mapped(QString)), this, SLOT(disconnect(QString)));
-    //myClient->timer->start(10000);
+    connect (myClient->timer, SIGNAL(timeout()), signalMapper, SLOT(map()));
+    connect (signalMapper, SIGNAL(mapped(QString)), this, SLOT(disconnect(QString)));
+    myClient->timer->start(10000);
+
     return myClient;
 }
 bool MyServer::clientIsRegistred(const QHostAddress& sender, const quint16& senderPort)
 {
+    //find global ip
     auto it = rclients.find(sender.toString());
     if (it != rclients.end() )
     {
+        //check port
         if (senderPort == clients.find(it.value())->m_port)
         return true;
     }
@@ -121,11 +121,7 @@ QByteArray MyServer::getAnswerOnClientRequest()
      QHostAddress sender;
      quint16 senderPort;
      QString type;
-     // qint64 QUdpSocket::readDatagram(char * data, qint64 maxSize,
-     //                 QHostAddress * address = 0, quint16 * port = 0)
-     // Receives a datagram no larger than maxSize bytes and stores it in data.
-     // The sender's host address and port is stored in *address and *port
-     // (unless the pointers are 0).
+
 
      mySocket->readDatagram(buffer.data(), buffer.size(),
                           &sender, &senderPort);
@@ -155,7 +151,7 @@ QByteArray MyServer::getAnswerOnClientRequest()
 
                 if (ip->version == 4)
                 {
-                    uint32_t ip_addr = ntohl(ip->daddr);
+                    //uint32_t ip_addr = ntohl(ip->daddr);
                     char buf[24];
                     inet_ntop(AF_INET, &ip->daddr, buf, sizeof(buf));
                     QString res = QString::fromLocal8Bit(buf);
@@ -166,7 +162,7 @@ QByteArray MyServer::getAnswerOnClientRequest()
                         newbuffer = myCrypto->encryptAES(it->aesKey,QByteArray(newbuffer,rCount));
                         newbuffer.push_front(2);
                         mySocket->writeDatagram(newbuffer, it->realIpAddress, it->m_port);
-                        //it->timer->start(10000);
+                        it->timer->start(10000);
 
                         qDebug() << res;
                         type = "traffic";
@@ -199,27 +195,27 @@ QByteArray MyServer::getAnswerOnClientRequest()
      case 0://Request for new client
      {
           if(msg.startsWith("NewClient"))
-      {
+          {
               if(manager->isEmpty())
-                   mySocket->writeDatagram(getErrorMessage(), sender, senderPort);
+                  mySocket->writeDatagram(getErrorMessage(), sender, senderPort);
                   else
-              {
-              msg.remove(0,9);
-              if(!clientIsRegistred(sender,senderPort))
-              {
-                  std::vector<byte> v;
-                  v.resize(msg.size());
-                  std::copy(msg.begin(),msg.end(),v.begin());
-                  CryptoPP::RSA::PublicKey pk = myCrypto->loadRSAPublicKey(v);
-                  addNewClient(pk,sender,senderPort);
-                  //send server Key
-                   mySocket->writeDatagram(getAnswerOnClientRequest(), sender, senderPort);
-                     qDebug()<<msg;
-              }
-              }
-      }
+                  {
+                      msg.remove(0,9);
+                      if(!clientIsRegistred(sender,senderPort))
+                      {
+                          std::vector<byte> v;
+                          v.resize(msg.size());
+                          std::copy(msg.begin(),msg.end(),v.begin());
+                          CryptoPP::RSA::PublicKey pk = myCrypto->loadRSAPublicKey(v);
+                          addNewClient(pk,sender,senderPort);
+                          //send server Key
+                           mySocket->writeDatagram(getAnswerOnClientRequest(), sender, senderPort);
+                             qDebug()<<msg;
+                      }
+                  }
+          }
 
-      break;
+          break;
      }
      case 1:
      {
