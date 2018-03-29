@@ -31,6 +31,7 @@ void MyServer::disconnect(QString ip)
     auto it = clients.find(ip);
     if (it == clients.end())
         return;
+    it->timer->stop();
     delete(it->timer);
     try {
         manager->returnIPAddress(std::string(ip.toUtf8()));
@@ -39,7 +40,7 @@ void MyServer::disconnect(QString ip)
     {
         qDebug() << ex.what();
     }
-    rclients.remove(it->realIpAddress.toString());
+    rclients.remove(it->realIpAddress.toString() + " " + QString::number(it->m_port));
     clients.remove(ip);
 }
 QByteArray MyServer::getErrorMessage()
@@ -63,7 +64,7 @@ QMap<QString,Client>::iterator MyServer::addNewClient(const CryptoPP::RSA::Publi
         return NULL;
     }
     auto myClient = clients.insert(localIP, Client(key, sender, senderPort));
-    rclients.insert(myClient->realIpAddress.toString(), localIP);
+    rclients.insert(myClient->realIpAddress.toString() + " " + QString::number(myClient->m_port), localIP);
     signalMapper->setMapping(myClient->timer, localIP);
     //connect map object to obtain client, which was disconnected
     connect (myClient->timer, SIGNAL(timeout()), signalMapper, SLOT(map()));
@@ -75,11 +76,9 @@ QMap<QString,Client>::iterator MyServer::addNewClient(const CryptoPP::RSA::Publi
 bool MyServer::clientIsRegistred(const QHostAddress& sender, const quint16& senderPort)
 {
     //find global ip
-    auto it = rclients.find(sender.toString());
+    auto it = rclients.find(sender.toString() + " " + QString::number(senderPort));
     if (it != rclients.end() )
     {
-        //check port
-        if (senderPort == clients.find(it.value())->m_port)
         return true;
     }
     return false;
@@ -99,9 +98,9 @@ QByteArray MyServer::getAnswerOnClientRequest()
     return msgForClient;
 }
 
- QMap<QString,Client>::iterator MyServer::findClientForLocalIp(const QHostAddress &sender)
+ QMap<QString,Client>::iterator MyServer::findClientForLocalIp(const QHostAddress &sender, const quint16& senderPort)
  {
-     QMap<QString,QString>::iterator it = rclients.find(sender.toString());
+     QMap<QString,QString>::iterator it = rclients.find(sender.toString() + " " + QString::number(senderPort));
      if (it != rclients.end() )
      {
          QMap<QString,Client>::iterator it1= clients.find(it.value());
@@ -136,7 +135,7 @@ QByteArray MyServer::getAnswerOnClientRequest()
         else
         {
             buffer.remove(0,1);
-            auto thisClient = findClientForLocalIp(sender);
+            auto thisClient = findClientForLocalIp(sender, senderPort);
             //Decrypt message
             buffer = myCrypto->decryptAES(thisClient->aesKey,buffer);
             int wCount = 0;
@@ -223,7 +222,7 @@ QByteArray MyServer::getAnswerOnClientRequest()
       if(msg.startsWith("aes")&&clientIsRegistred(sender,senderPort))
          {
             msg.remove(0,3);
-            QString address = rclients[sender.toString()];
+            QString address = rclients[sender.toString() + " " + QString::number(senderPort)];
             QMap<QString,Client>::iterator it = clients.find(address);
             it->setAesKey(myCrypto->decryptRSA(msg));
             QByteArray params = myCrypto->encryptRSA(it->publicKey,buildParameters(address));

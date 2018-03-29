@@ -46,7 +46,6 @@ private:
     //real ip , virtual ip
     QMap<QString, QString> rclients;
     int interface;
-//    QSignalMapper* signalMapper; //advanced signal class
     QSignalMapper* signalMapper;
     IpManager *manager;
     CryptoServer* myCrypto;
@@ -59,7 +58,7 @@ private:
     QByteArray getAnswerOnClientRequest();
     bool clientIsRegistred(const QHostAddress& sender, const quint16& senderPort);
     QMap<QString,Client>::iterator addNewClient(const CryptoPP::RSA::PublicKey& key,const QHostAddress& sender, const quint16& senderPort);
-    QMap<QString,Client>::iterator findClientForLocalIp(const QHostAddress& sender);
+    QMap<QString,Client>::iterator findClientForLocalIp(const QHostAddress& sender, const quint16& senderPort);
     QByteArray getErrorMessage();
 };
 
