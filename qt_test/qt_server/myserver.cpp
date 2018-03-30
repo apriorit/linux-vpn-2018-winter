@@ -31,9 +31,8 @@ void MyServer::disconnect(QString ip)
     auto it = clients.find(ip);
     if (it == clients.end())
         return;
-    //it->timer->blockSignals(1);
+    it->timer->stop();
     delete(it->timer);
-   //bool flag = QTimer::disconnect (it->timer, SIGNAL(timeout()), signalMapper, SLOT(map()));
     try {
         manager->returnIPAddress(std::string(ip.toUtf8()));
      }
@@ -41,8 +40,7 @@ void MyServer::disconnect(QString ip)
     {
         qDebug() << ex.what();
     }
-    //ipPool.enqueue(std::string(ip.toUtf8()));
-    rclients.remove(it->realIpAddress.toString());
+    rclients.remove(it->realIpAddress.toString() + " " + QString::number(it->m_port));
     clients.remove(ip);
 }
 QByteArray MyServer::getErrorMessage()
@@ -66,20 +64,21 @@ QMap<QString,Client>::iterator MyServer::addNewClient(const CryptoPP::RSA::Publi
         return NULL;
     }
     auto myClient = clients.insert(localIP, Client(key, sender, senderPort));
-    rclients.insert(myClient->realIpAddress.toString(), localIP);
-   // signalMapper->setMapping(myClient->timer, localIP);
+    rclients.insert(myClient->realIpAddress.toString() + " " + QString::number(myClient->m_port), localIP);
+    signalMapper->setMapping(myClient->timer, localIP);
     //connect map object to obtain client, which was disconnected
-    //connect (myClient->timer, SIGNAL(timeout()), signalMapper, SLOT(map()));
-    //connect (signalMapper, SIGNAL(mapped(QString)), this, SLOT(disconnect(QString)));
-    //myClient->timer->start(10000);
+    connect (myClient->timer, SIGNAL(timeout()), signalMapper, SLOT(map()));
+    connect (signalMapper, SIGNAL(mapped(QString)), this, SLOT(disconnect(QString)));
+    myClient->timer->start(10000);
+
     return myClient;
 }
 bool MyServer::clientIsRegistred(const QHostAddress& sender, const quint16& senderPort)
 {
-    auto it = rclients.find(sender.toString());
+    //find global ip
+    auto it = rclients.find(sender.toString() + " " + QString::number(senderPort));
     if (it != rclients.end() )
     {
-        if (senderPort == clients.find(it.value())->m_port)
         return true;
     }
     return false;
@@ -99,9 +98,9 @@ QByteArray MyServer::getAnswerOnClientRequest()
     return msgForClient;
 }
 
- QMap<QString,Client>::iterator MyServer::findClientForLocalIp(const QHostAddress &sender)
+ QMap<QString,Client>::iterator MyServer::findClientForLocalIp(const QHostAddress &sender, const quint16& senderPort)
  {
-     QMap<QString,QString>::iterator it = rclients.find(sender.toString());
+     QMap<QString,QString>::iterator it = rclients.find(sender.toString() + " " + QString::number(senderPort));
      if (it != rclients.end() )
      {
          QMap<QString,Client>::iterator it1= clients.find(it.value());
@@ -121,11 +120,7 @@ QByteArray MyServer::getAnswerOnClientRequest()
      QHostAddress sender;
      quint16 senderPort;
      QString type;
-     // qint64 QUdpSocket::readDatagram(char * data, qint64 maxSize,
-     //                 QHostAddress * address = 0, quint16 * port = 0)
-     // Receives a datagram no larger than maxSize bytes and stores it in data.
-     // The sender's host address and port is stored in *address and *port
-     // (unless the pointers are 0).
+
 
      mySocket->readDatagram(buffer.data(), buffer.size(),
                           &sender, &senderPort);
@@ -140,7 +135,7 @@ QByteArray MyServer::getAnswerOnClientRequest()
         else
         {
             buffer.remove(0,1);
-            auto thisClient = findClientForLocalIp(sender);
+            auto thisClient = findClientForLocalIp(sender, senderPort);
             //Decrypt message
             buffer = myCrypto->decryptAES(thisClient->aesKey,buffer);
             int wCount = 0;
@@ -155,7 +150,7 @@ QByteArray MyServer::getAnswerOnClientRequest()
 
                 if (ip->version == 4)
                 {
-                    uint32_t ip_addr = ntohl(ip->daddr);
+                    //uint32_t ip_addr = ntohl(ip->daddr);
                     char buf[24];
                     inet_ntop(AF_INET, &ip->daddr, buf, sizeof(buf));
                     QString res = QString::fromLocal8Bit(buf);
@@ -166,7 +161,7 @@ QByteArray MyServer::getAnswerOnClientRequest()
                         newbuffer = myCrypto->encryptAES(it->aesKey,QByteArray(newbuffer,rCount));
                         newbuffer.push_front(2);
                         mySocket->writeDatagram(newbuffer, it->realIpAddress, it->m_port);
-                        //it->timer->start(10000);
+                        it->timer->start(10000);
 
                         qDebug() << res;
                         type = "traffic";
@@ -199,27 +194,27 @@ QByteArray MyServer::getAnswerOnClientRequest()
      case 0://Request for new client
      {
           if(msg.startsWith("NewClient"))
-      {
+          {
               if(manager->isEmpty())
-                   mySocket->writeDatagram(getErrorMessage(), sender, senderPort);
+                  mySocket->writeDatagram(getErrorMessage(), sender, senderPort);
                   else
-              {
-              msg.remove(0,9);
-              if(!clientIsRegistred(sender,senderPort))
-              {
-                  std::vector<byte> v;
-                  v.resize(msg.size());
-                  std::copy(msg.begin(),msg.end(),v.begin());
-                  CryptoPP::RSA::PublicKey pk = myCrypto->loadRSAPublicKey(v);
-                  addNewClient(pk,sender,senderPort);
-                  //send server Key
-                   mySocket->writeDatagram(getAnswerOnClientRequest(), sender, senderPort);
-                     qDebug()<<msg;
-              }
-              }
-      }
+                  {
+                      msg.remove(0,9);
+                      if(!clientIsRegistred(sender,senderPort))
+                      {
+                          std::vector<byte> v;
+                          v.resize(msg.size());
+                          std::copy(msg.begin(),msg.end(),v.begin());
+                          CryptoPP::RSA::PublicKey pk = myCrypto->loadRSAPublicKey(v);
+                          addNewClient(pk,sender,senderPort);
+                          //send server Key
+                           mySocket->writeDatagram(getAnswerOnClientRequest(), sender, senderPort);
+                             qDebug()<<msg;
+                      }
+                  }
+          }
 
-      break;
+          break;
      }
      case 1:
      {
@@ -227,7 +222,7 @@ QByteArray MyServer::getAnswerOnClientRequest()
       if(msg.startsWith("aes")&&clientIsRegistred(sender,senderPort))
          {
             msg.remove(0,3);
-            QString address = rclients[sender.toString()];
+            QString address = rclients[sender.toString() + " " + QString::number(senderPort)];
             QMap<QString,Client>::iterator it = clients.find(address);
             it->setAesKey(myCrypto->decryptRSA(msg));
             QByteArray params = myCrypto->encryptRSA(it->publicKey,buildParameters(address));

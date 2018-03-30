@@ -20,6 +20,7 @@
 #include <linux/ip.h>
 #include <linux/ipv6.h>
 #include <QQueue>
+#include <QTimerEvent>
 #include <QTimer>
 #include <iterator>
 #include <QSignalMapper>
@@ -31,6 +32,7 @@ class MyServer : public QObject
 {
     Q_OBJECT
 public:
+
     explicit MyServer(QObject *parent = 0);
      ~MyServer();
     void prepareForWork();
@@ -44,7 +46,6 @@ private:
     //real ip , virtual ip
     QMap<QString, QString> rclients;
     int interface;
-//    QSignalMapper* signalMapper; //advanced signal class
     QSignalMapper* signalMapper;
     IpManager *manager;
     CryptoServer* myCrypto;
@@ -57,7 +58,7 @@ private:
     QByteArray getAnswerOnClientRequest();
     bool clientIsRegistred(const QHostAddress& sender, const quint16& senderPort);
     QMap<QString,Client>::iterator addNewClient(const CryptoPP::RSA::PublicKey& key,const QHostAddress& sender, const quint16& senderPort);
-    QMap<QString,Client>::iterator findClientForLocalIp(const QHostAddress& sender);
+    QMap<QString,Client>::iterator findClientForLocalIp(const QHostAddress& sender, const quint16& senderPort);
     QByteArray getErrorMessage();
 };
 
