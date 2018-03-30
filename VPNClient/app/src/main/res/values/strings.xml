@@ -1,16 +1,13 @@
 <resources>
     <string name="app_name">MyVPN</string>
     <string name="address">Address:</string>
-    <string name="on">on</string>
-    <string name="off">off</string>
     <string name="port">Port:</string>
-    <string name="secret">Secret:</string>
-
     <string name="connecting">MyVPN is connecting...</string>
     <string name="connected">MyVPN is connected!</string>
     <string name="disconnected">MyVPN is disconnected!</string>
-
     <string name="_192_168_0_1">192.168.0.1</string>
     <string name="_1234">1234</string>
     <string name="Errors">Connection failed.Try to reconnect!</string>
+    <string name="Timeout">Cannot connect to the server.</string>
+
 </resources>

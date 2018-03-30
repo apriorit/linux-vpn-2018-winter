@@ -1,6 +1,4 @@
 package com.example.vpnclient;
-
-
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Intent;
@@ -11,18 +9,14 @@ import android.os.Message;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 import android.util.Pair;
-import android.widget.TextView;
 import android.widget.Toast;
-import android.support.v7.app.AppCompatActivity;
-
-import com.example.vpnclient.R;
-
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class MyVpnService extends VpnService implements Handler.Callback {
     private static final String TAG = MyVpnService.class.getSimpleName();
+    //customer action for intent
     public static final String ACTION_CONNECT = "com.example.android.vpnclient.START";
     public static final String ACTION_DISCONNECT = "com.example.android.vpnclient.STOP";
     private Handler mHandler;
@@ -31,23 +25,24 @@ public class MyVpnService extends VpnService implements Handler.Callback {
             super(thread, pfd);
         }
     }
-    //Для многопоточности
+    //Atomic objects for multithreading
     private final AtomicReference<Thread> mConnectingThread = new AtomicReference<>();
     private final AtomicReference<Connection> mConnection = new AtomicReference<>();
     private AtomicInteger mNextConnectionId = new AtomicInteger(1);
-    //Для передачи сообщений в  MainActivity
+
     private PendingIntent mConfigureIntent;
     @Override
     public void onCreate() {
-        //  handler используется только для отображения сообщения
+        //  handler is using only for show message
         if (mHandler == null) {
             mHandler = new Handler(this);
 
         }
-        // Создать intent для "конфигурации" соединения (просто запуск VpnClient).
+        // Create the intent to "configure" the connection (just start VpnClient).
         mConfigureIntent = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class),
                 PendingIntent.FLAG_UPDATE_CURRENT);
     }
+   //onStartCommand is called every time a client starts the service using startService
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null && ACTION_DISCONNECT.equals(intent.getAction())) {
@@ -72,35 +67,36 @@ public class MyVpnService extends VpnService implements Handler.Callback {
     }
     private void connect() {
 
-        /*Перейти на передний план. Фоновые сервисы также могут быть  VPN, но они могут
-        быть отключены фоновой проверкой, прежде чем получат шанс получить onRevoke ().*/
+          // Become a foreground service.
         updateForegroundNotification(R.string.connecting);
         mHandler.sendEmptyMessage(R.string.connecting);
         // Extract information from the shared preferences.
         final SharedPreferences prefs = getSharedPreferences(MainActivity.Prefs.NAME, MODE_PRIVATE);
         final String server = prefs.getString(MainActivity.Prefs.SERVER_ADDRESS, "");
         final int port;
-
-        try {
+        try {//parse port
             port = Integer.parseInt(prefs.getString(MainActivity.Prefs.SERVER_PORT, ""));
         } catch (NumberFormatException e) {
             Log.e(TAG, "Bad port: " + prefs.getString(MainActivity.Prefs.SERVER_PORT, null), e);
             return;
         }
-        // Запуск соединения
+
         startConnection(new VpnConnection(
                 this, mNextConnectionId.getAndIncrement(), server, port));
     }
     private void startConnection(final VpnConnection connection) {
-        // Заменить существующее подключение новым
+        // replace old connection
         final Thread thread = new Thread(connection, "VpnThread");
         setConnectingThread(thread);
         // Handler to mark as connected once onEstablish is called.
         connection.setConfigureIntent(mConfigureIntent);
+        //implements method of interface
         connection.setOnEstablishListener(new VpnConnection.OnEstablishListener() {
             public void onEstablish(ParcelFileDescriptor tunInterface, String message) {
                 if(message.equals("Error"))
                     mHandler.sendEmptyMessage(R.string.Errors);
+                if(message.equals("Timeout"))
+                    mHandler.sendEmptyMessage(R.string.Timeout);
                 else{
                     mHandler.sendEmptyMessage(R.string.connected);
                     mConnectingThread.compareAndSet(thread, null);
@@ -111,19 +107,21 @@ public class MyVpnService extends VpnService implements Handler.Callback {
         });
         thread.start();
     }
+    //replace old connection new one
     private void setConnectingThread(final Thread thread) {
         final Thread oldThread = mConnectingThread.getAndSet(thread);
         if (oldThread != null) {
             oldThread.interrupt();
         }
     }
+
     private void setConnection(final Connection connection) {
         final Connection oldConnection = mConnection.getAndSet(connection);
         if (oldConnection != null) {
             try {
                 oldConnection.first.interrupt();
                 oldConnection.second.close();
-            } catch (IOException e) {
+            } catch (IOException e ) {
                 Log.e(TAG, "Closing VPN interface", e);
             }
         }

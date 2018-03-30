@@ -1,38 +1,34 @@
 package com.example.vpnclient;
 
 
-import android.util.Base64;
 import android.util.Log;
 
-import java.security.GeneralSecurityException;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import javax.crypto.Cipher;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
+
 import java.security.SecureRandom;
 
 public class CryptoClient {
-    private SecretKey sKey;//AES
-    private Key publicKey;//RSA
-    private Key privateKey ;//RSA
-    private PublicKey serverPublicKey ;//RSA
+    private SecretKey mAESKey;//AES
+    private Key mPublicKey;//RSA
+    private Key mPrivateKey;//RSA
+    private PublicKey mServerPublicKey;//RSA
 
     public void generateKeys()
     {
         try {
             KeyGenerator kgen = KeyGenerator.getInstance("AES");
             kgen.init(128);
-             sKey = kgen.generateKey();
+             mAESKey = kgen.generateKey();
         }catch (Exception e) {
             Log.e("Crypto", "AES secret key error");
         }
@@ -40,8 +36,8 @@ public class CryptoClient {
             KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
             kpg.initialize(2048);
             KeyPair kp = kpg.genKeyPair();
-            publicKey = kp.getPublic();
-            privateKey = kp.getPrivate();
+            mPublicKey = kp.getPublic();
+            mPrivateKey = kp.getPrivate();
         } catch (Exception e) {
             Log.e("Crypto", "RSA key pair error");
         }
@@ -54,14 +50,14 @@ public class CryptoClient {
         try {
             kf = KeyFactory.getInstance("RSA");
 
-            serverPublicKey = kf.generatePublic(ks);
+            mServerPublicKey = kf.generatePublic(ks);
         } catch (Exception e) {
         Log.e("Crypto", "RSA loading key error");
     }
     }
     public byte[] getPublicRSAKey()
     {
-        return publicKey.getEncoded();
+        return mPublicKey.getEncoded();
     }
 
     public byte[] encryptAES (byte[] plainText)
@@ -75,7 +71,7 @@ public class CryptoClient {
 
             byte[] encodedBytes = null;
             Cipher c = Cipher.getInstance("AES/CFB8/NoPadding");
-            c.init(Cipher.ENCRYPT_MODE, sKey,ivspec);
+            c.init(Cipher.ENCRYPT_MODE, mAESKey,ivspec);
             encodedBytes = c.doFinal(plainText);
             resByte  = new byte[iv.length + encodedBytes.length];
             System.arraycopy(iv, 0, resByte, 0, iv.length);
@@ -101,7 +97,7 @@ public class CryptoClient {
          //   final byte[] encryptedBytes = Base64.decode(encrypted.substring(16,encrypted.length()), Base64.DEFAULT);
             //Инициализация и задание параметров расшифровки
             Cipher cipher = Cipher.getInstance("AES/CFB8/NoPadding");
-            cipher.init(Cipher.DECRYPT_MODE, sKey, new IvParameterSpec(ivBytes));
+            cipher.init(Cipher.DECRYPT_MODE, mAESKey, new IvParameterSpec(ivBytes));
             //Расшифровка
              resultBytes = cipher.doFinal(encryptText);
 
@@ -112,12 +108,12 @@ public class CryptoClient {
     }
     public byte[] getAESKey()
     {
-        return sKey.getEncoded();
+        return mAESKey.getEncoded();
     }
     public byte[] ecryptRSA(byte[] plainText) {
         try {
             Cipher c =  Cipher.getInstance("RSA/ECB/OAEPWithSHA-1AndMGF1Padding");;
-            c.init(Cipher.ENCRYPT_MODE, serverPublicKey);
+            c.init(Cipher.ENCRYPT_MODE, mServerPublicKey);
             return c.doFinal(plainText,0,plainText.length);
         } catch (Exception e) {
             Log.e("Crypto", "RSA encryption error");
@@ -130,7 +126,7 @@ public class CryptoClient {
         byte[] decodedBytes = null;
         try {
             Cipher c = Cipher.getInstance("RSA/ECB/OAEPWithSHA-1AndMGF1Padding");
-            c.init(Cipher.DECRYPT_MODE, privateKey);
+            c.init(Cipher.DECRYPT_MODE, mPrivateKey);
             decodedBytes = c.doFinal(encryptText);
         } catch (Exception e) {
             Log.e("Crypto", "RSA decryption error");
@@ -138,5 +134,9 @@ public class CryptoClient {
 
          //to string: new String(decodedBytes)
         return decodedBytes;
+    }
+    public PublicKey getServerPublicRSAKey()
+    {
+        return mServerPublicKey;
     }
 }
