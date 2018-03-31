@@ -3,6 +3,7 @@
     <string name="address">Address:</string>
     <string name="port">Port:</string>
     <string name="connecting">MyVPN is connecting...</string>
+    <string name="waitNetwork">MyVPN is waiting for connection to network...</string>
     <string name="connected">MyVPN is connected!</string>
     <string name="disconnected">MyVPN is disconnected!</string>
     <string name="_192_168_0_1">192.168.0.1</string>

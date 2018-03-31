@@ -6,13 +6,13 @@ import android.net.VpnService;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
 import com.example.vpnclient.R;
 
 public class MainActivity extends AppCompatActivity {
+    boolean connected = false;
 
     private static final String IPV4_REGEX = "\\A(25[0-5]|2[0-4]\\d|[0-1]?\\d?\\d)(\\.(25[0-5]|2[0-4]\\d|[0-1]?\\d?\\d)){3}\\z";
     private static final String emptyField = "Please, input data for connection!";
@@ -24,27 +24,11 @@ public class MainActivity extends AppCompatActivity {
         String SERVER_PORT = "server.port";
     }
 
-    private void activateButton(Button butt)
-    {
-        //activate button
-        butt.setClickable(true);
-        butt.setVisibility(View.VISIBLE);
-    }
-    private void deactivateButton(Button butt)
-    {
-        //deactivate button "on"
-        butt.setClickable(false);
-        butt.setVisibility(View.GONE);
-    }
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        //get buttons
-        Button buttDisconnect = findViewById(R.id.disconnect);
-        Button buttConnect = findViewById(R.id.connect);
 
-        deactivateButton(buttDisconnect);
         //create objs for address, port
         final TextView serverAddress =  findViewById(R.id.address);
         final TextView serverPort = findViewById(R.id.port);
@@ -53,33 +37,37 @@ public class MainActivity extends AppCompatActivity {
         //display stored settings
         serverAddress.setText(prefs.getString(Prefs.SERVER_ADDRESS, ""));
         serverPort.setText(prefs.getString(Prefs.SERVER_PORT, ""));
-        //if call "connect"
-       buttConnect.setOnClickListener(v -> {
-           //get text from edittext
-           String textAddress = serverAddress.getText().toString();
-           String textPort = serverPort.getText().toString();
-           //if address or port is empty, show error
-           if (textAddress.equals("")|| textPort.equals(""))
-               callMessageError(emptyField);
-           else {
-               //if address is not correct, show error
-               if (!textAddress.matches(IPV4_REGEX))
-                   callMessageError(errorMessage);
-               else {
-                   deactivateButton(buttConnect);
-                   activateButton(buttDisconnect);
-                   //rewrite stored data, after call "connect"
-                   prefs.edit().putString(Prefs.SERVER_ADDRESS, textAddress).putString(Prefs.SERVER_PORT, textPort).commit();
-                   //try to run vpn
-                   intentOnVpnConnection();
-               }
-       }
-        });
-        //if call "disconnect"
-        buttDisconnect.setOnClickListener(v -> {
-            activateButton(buttConnect);
-            deactivateButton(buttDisconnect);
-            startService(getServiceIntent().setAction(MyVpnService.ACTION_DISCONNECT));
+        Button myButton = findViewById(R.id.connect);
+
+        myButton.setOnClickListener(v -> {
+            if(!connected) //connect
+                {
+                    //get text from edittext
+                    String textAddress = serverAddress.getText().toString();
+                    String textPort = serverPort.getText().toString();
+                    //if address or port is empty, show error
+                    if (textAddress.equals("")|| textPort.equals(""))
+                        callMessageError(emptyField);
+                    else {
+                        //if address is not correct, show error
+                        if (!textAddress.matches(IPV4_REGEX))
+                            callMessageError(errorMessage);
+                        else {
+                            connected=true;
+                            myButton.setBackgroundResource(R.drawable.offbut_active);
+                            //rewrite stored data, after call "connect"
+                            prefs.edit().putString(Prefs.SERVER_ADDRESS, textAddress).putString(Prefs.SERVER_PORT, textPort).commit();
+                            //try to run vpn
+                            intentOnVpnConnection();
+                        }
+                    }
+                }
+                else //disconnect
+                {
+                    connected = false;
+                    myButton.setBackgroundResource(R.drawable.onbut_active);
+                    startService(getServiceIntent().setAction(MyVpnService.ACTION_DISCONNECT));
+                }
         });
     }
 

@@ -36,7 +36,6 @@ public class MyVpnService extends VpnService implements Handler.Callback {
         //  handler is using only for show message
         if (mHandler == null) {
             mHandler = new Handler(this);
-
         }
         // Create the intent to "configure" the connection (just start VpnClient).
         mConfigureIntent = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class),
@@ -66,21 +65,19 @@ public class MyVpnService extends VpnService implements Handler.Callback {
         return true;
     }
     private void connect() {
-
-          // Become a foreground service.
+        // Become a foreground service.
         updateForegroundNotification(R.string.connecting);
         mHandler.sendEmptyMessage(R.string.connecting);
         // Extract information from the shared preferences.
         final SharedPreferences prefs = getSharedPreferences(MainActivity.Prefs.NAME, MODE_PRIVATE);
-        final String server = prefs.getString(MainActivity.Prefs.SERVER_ADDRESS, "");
-        final int port;
+        /*final*/ String server = prefs.getString(MainActivity.Prefs.SERVER_ADDRESS, "");
+         /*final*/ int port;
         try {//parse port
             port = Integer.parseInt(prefs.getString(MainActivity.Prefs.SERVER_PORT, ""));
         } catch (NumberFormatException e) {
             Log.e(TAG, "Bad port: " + prefs.getString(MainActivity.Prefs.SERVER_PORT, null), e);
             return;
         }
-
         startConnection(new VpnConnection(
                 this, mNextConnectionId.getAndIncrement(), server, port));
     }
@@ -92,18 +89,21 @@ public class MyVpnService extends VpnService implements Handler.Callback {
         connection.setConfigureIntent(mConfigureIntent);
         //implements method of interface
         connection.setOnEstablishListener(new VpnConnection.OnEstablishListener() {
-            public void onEstablish(ParcelFileDescriptor tunInterface, String message) {
-                if(message.equals("Error"))
-                    mHandler.sendEmptyMessage(R.string.Errors);
-                if(message.equals("Timeout"))
-                    mHandler.sendEmptyMessage(R.string.Timeout);
-                else{
+            public void onEstablish(ParcelFileDescriptor tunInterface) {
+
                     mHandler.sendEmptyMessage(R.string.connected);
                     mConnectingThread.compareAndSet(thread, null);
                     setConnection(new Connection(thread, tunInterface));
-                }
-
             }
+        });
+        //interface to show message from other class
+        connection.setToolToShowMessage(new VpnConnection.ToolToShowMessage(){
+            @Override
+            public void updateForegroundMsg(String message) {
+                    if (message.equals("Timeout")) mHandler.sendEmptyMessage(R.string.Timeout);
+                    else
+                    if (message.equals("Error")) mHandler.sendEmptyMessage(R.string.Errors);
+         }
         });
         thread.start();
     }
@@ -139,4 +139,5 @@ public class MyVpnService extends VpnService implements Handler.Callback {
                 .setContentIntent(mConfigureIntent)
                 .build());
     }
+
 }

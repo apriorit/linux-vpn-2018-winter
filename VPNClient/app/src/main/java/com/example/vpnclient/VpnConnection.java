@@ -1,29 +1,19 @@
 package com.example.vpnclient;
 
-import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 import android.app.PendingIntent;
+
 import android.net.VpnService;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
-
-
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
 import java.nio.channels.DatagramChannel;
-
-
-import java.nio.charset.Charset;
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 
@@ -33,23 +23,20 @@ public class VpnConnection implements Runnable {
      * and update the foreground notification with connection status.
      */
     public interface OnEstablishListener {
-        void onEstablish(ParcelFileDescriptor tunInterface,String message);
+        void onEstablish(ParcelFileDescriptor tunInterface);
     }
-    /** Maximum packet size is constrained by the MTU, which is given as a signed short. */
+    //Thanks to this interface we can show message about mistakes
+    public interface ToolToShowMessage
+    {
+       void updateForegroundMsg(String message);
+    }
+    // Maximum packet size is constrained by the MTU, which is given as a signed short.
     private static final int MAX_PACKET_SIZE = Short.MAX_VALUE;
-    /** Time between keepalives if there is no traffic at the moment.
-     *
-     * TODO: don't do this; it's much better to let the connection die and then reconnect when
-     *       necessary instead of keeping the network hardware up for hours on end in between.
-     **/
+    // Time between keepalives if there is no packet from server
     private static final long KEEPALIVE_INTERVAL_MS = TimeUnit.SECONDS.toMillis(15);
-    /** Time to wait without receiving any response before assuming the server is gone. */
+    // Time to wait without receiving any response before assuming the server is gone.
     private static final long RECEIVE_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(20);
-    /**
-     * Time between polling the VPN interface for new traffic, since it's non-blocking.
-     *
-     * TODO: really don't do this; a blocking read on another thread is much cleaner.
-     */
+    //Time between polling the VPN interface for new traffic, since it's non-blocking.
     private static final long IDLE_INTERVAL_MS = TimeUnit.MILLISECONDS.toMillis(100);
     /**
      * Number of periods of length {@IDLE_INTERVAL_MS} to wait before declaring the handshake a
@@ -63,6 +50,7 @@ public class VpnConnection implements Runnable {
     private CryptoClient myCrypto;
     private PendingIntent mConfigureIntent;
     private OnEstablishListener mOnEstablishListener;
+    private ToolToShowMessage mShowMsg;
     public VpnConnection(final VpnService service, final int connectionId,
                          final String serverName, final int serverPort) {
         mService = service;
@@ -70,7 +58,6 @@ public class VpnConnection implements Runnable {
         mServerName = serverName;
         mServerPort= serverPort;
         myCrypto = new CryptoClient();
-
     }
 
     /**
@@ -79,6 +66,10 @@ public class VpnConnection implements Runnable {
     public void setConfigureIntent(PendingIntent intent) {
         mConfigureIntent = intent;
     }
+    public void setToolToShowMessage(ToolToShowMessage tool)
+    {
+        mShowMsg = tool;
+    }
     public void setOnEstablishListener(OnEstablishListener listener) {
         mOnEstablishListener = listener;
     }
@@ -86,13 +77,9 @@ public class VpnConnection implements Runnable {
     public void run() {
         try {
             Log.i(getTag(), "Starting");
-
             final SocketAddress serverAddress = new InetSocketAddress(mServerName, mServerPort);
-            // We try to create the tunnel several times.
-            // TODO: The better way is to work with ConnectivityManager, trying only when the
-            //       network is available.
-            // Here we just use a counter to keep things simple.
-            for (int attempt = 0; attempt < 1; ++attempt) {
+            //This code can be better
+            for (int attempt = 0; attempt < 3; ++attempt) {
                 // Reset the counter if we were connected.
                 if (run(serverAddress)) {
                     attempt = 0;
@@ -101,7 +88,7 @@ public class VpnConnection implements Runnable {
                 Thread.sleep(3000);
             }
             Log.i(getTag(), "Giving up");
-            mOnEstablishListener.onEstablish(null,"Timeout");
+            mShowMsg.updateForegroundMsg("Timeout");
         }
         catch(java.nio.channels.ClosedByInterruptException e)
         {
@@ -111,7 +98,7 @@ public class VpnConnection implements Runnable {
         {
         Log.e(getTag(), "My connection was interrupted", e);}
         catch (IOException  | IllegalArgumentException e) {
-               mOnEstablishListener.onEstablish(null,"Error");
+            mShowMsg.updateForegroundMsg("Error");
             Log.e(getTag(), "Connection failed, exiting. Something in program goes wrong", e);
         }
     }
@@ -149,62 +136,67 @@ public class VpnConnection implements Runnable {
             //   - when data has not been received in a while, assume the connection is broken.
             long lastSendTime = System.currentTimeMillis();
             long lastReceiveTime = System.currentTimeMillis();
-            // We keep forwarding packets till something goes wrong.
-            while (true) {
-                // Assume that we did not make any progress in this iteration.
-                boolean idle = true;
-                // Read the outgoing packet from the input stream.
-                int length = in.read(packet.array());
-                if (length > 0) {
-                    //encrypt data by AES
-                    byte [] encrypt = myCrypto.encryptAES(Arrays.copyOfRange(packet.array(),0,length));
-                    packet.clear();
-                    packet.put((byte)2).put(encrypt);
-                    packet.position(0);
-                    // Write the outgoing packet to the tunnel.
-                    packet.limit(encrypt.length+1);
-                    tunnel.write(packet);
-                    packet.clear();
-                    // There might be more outgoing packets.
-                    idle = false;
-                    lastReceiveTime = System.currentTimeMillis();
-                }
-                idle = true;
-                // Read the incoming packet from the tunnel.
-                length = tunnel.read(packet);
-                if (length > 0) {
-                    // Ignore other control message, reveive only message which starts with 2.
-                    if (packet.get(0) == 2 ) {
-                       byte[] decrypt =  myCrypto.decryptAES(Arrays.copyOfRange(packet.array(),1,length));
-                        // Write the incoming packet to the output stream.
-                            out.write(decrypt, 0, decrypt.length);
+            try {
+                // We keep forwarding packets till something goes wrong.
+                while (true) {
+                    // Assume that we did not make any progress in this iteration.
+                    boolean idle = true;
+                    // Read the outgoing packet from the input stream.
+                    int length = in.read(packet.array());
+                    if (length > 0) {
+                        //encrypt data by AES
+                        byte[] encrypt = myCrypto.encryptAES(Arrays.copyOfRange(packet.array(), 0, length));
+                        packet.clear();
+                        packet.put((byte) 2).put(encrypt);
+                        packet.position(0);
+                        // Write the outgoing packet to the tunnel.
+                        packet.limit(encrypt.length + 1);
+                        tunnel.write(packet);
+                        packet.clear();
+                        // There might be more outgoing packets.
+                        idle = false;
+                        lastReceiveTime = System.currentTimeMillis();
                     }
-                    packet.clear();
-                    // There might be more incoming packets.
-                    idle = false;
-                    lastSendTime = System.currentTimeMillis();
-                }
-                // If we are idle or waiting for the network, sleep for a
-                // fraction of time to avoid busy looping.
-                if (idle) {
-                    Thread.sleep(IDLE_INTERVAL_MS);
-                    final long timeNow = System.currentTimeMillis();
-                    if (lastSendTime + KEEPALIVE_INTERVAL_MS <= timeNow) {
-                        /*// We are receiving for a long time but not sending.
-                                // Send empty control messages.
-                                        packet.put((byte)0).limit(1);
-                        for (int i = 0; i < 3; ++i) {
-                            packet.position(0);
-                            tunnel.write(packet);
+                    idle = true;
+                    // Read the incoming packet from the tunnel.
+                    length = tunnel.read(packet);
+                    if (length > 0) {
+                        // Ignore other control message, reveive only message which starts with 2.
+                        if (packet.get(0) == 2) {
+                            byte[] decrypt = myCrypto.decryptAES(Arrays.copyOfRange(packet.array(), 1, length));
+                            // Write the incoming packet to the output stream.
+                            out.write(decrypt, 0, decrypt.length);
                         }
                         packet.clear();
-                        lastSendTime = timeNow;*/
-                        throw new IllegalStateException("Timed out");
-                    } else if (lastReceiveTime + RECEIVE_TIMEOUT_MS <= timeNow) {
-                        // We are sending for a long time but not receiving.
-                        throw new IllegalStateException("Timed out");
+                        // There might be more incoming packets.
+                        idle = false;
+                        lastSendTime = System.currentTimeMillis();
+                    }
+                    // If we are idle or waiting for the network, sleep for a
+                    // fraction of time to avoid busy looping.
+                    if (idle) {
+                        Thread.sleep(IDLE_INTERVAL_MS);
+                        final long timeNow = System.currentTimeMillis();
+                        if (lastSendTime + KEEPALIVE_INTERVAL_MS <= timeNow) {
+                            /*Server are not sending for us anything for a long time
+                            It will be better to sent for server a control message(to check is server alive)
+                            but now we just do disconnect
+                            */
+                            throw new IllegalStateException("Timed out");
+                        } else if (lastReceiveTime + RECEIVE_TIMEOUT_MS <= timeNow) {
+                            // We are sending for a long time but not receiving.
+                            //Maybe network is failed?
+                            throw new IllegalStateException("Timed out");
+                        }
                     }
                 }
+            }finally {
+                //Say goodbye to the server
+                packet.clear();
+                packet.put((byte) 3).put("Bye".getBytes());
+                packet.position(0);
+                packet.limit(4);
+                tunnel.write(packet);
             }
         } catch (SocketException e) {
             Log.e(getTag(), "Cannot use socket", e);
@@ -269,11 +261,9 @@ public class VpnConnection implements Runnable {
     {
         ByteBuffer packet = ByteBuffer.allocate(1024);
         packet.put((byte)1).put("aes".getBytes()).put(myCrypto.ecryptRSA(myCrypto.getAESKey())).flip();
-        // Send the secret several times in case of packet loss.
-        for (int i = 0; i < 3; ++i) {
-            packet.position(0);
+        // Send the secret
             tunnel.write(packet);
-        }
+
     }
     private String receiveParameters(DatagramChannel tunnel) throws IOException,InterruptedException
     {
@@ -322,7 +312,7 @@ public class VpnConnection implements Runnable {
                     .setConfigureIntent(mConfigureIntent)
                     .establish();
             if (mOnEstablishListener != null) {
-                mOnEstablishListener.onEstablish(vpnInterface,"MyVPN is connected!");
+                mOnEstablishListener.onEstablish(vpnInterface);
             }
         }
         Log.i(getTag(), "New interface: " + vpnInterface + " (" + parameters + ")");
