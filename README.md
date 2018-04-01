@@ -4,5 +4,4 @@ See ClientREADME and ServerREADME to obtain all information about usage and inst
 
 Developers: 
 
-Daria Vasilyeva - dashavasilyeva911@gmail.com
-Vladyslav Vizyr - wizir6@gmail.com
+Daria Vasilyeva - dashavasilyeva911@gmail.com\nVladyslav Vizyr - wizir6@gmail.com
