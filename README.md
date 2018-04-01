@@ -1,7 +1,9 @@
 
-How to create deb-package
+To create deb package run "superMegaCoolScriptForCreatingDeb" in ./Server/Additional_files with root permissions.
 
-1) From directory 'MyVpn' run <dh_make --native>
+How to create deb-package manually:
+
+1) From directory 'myvpn-1.0' run <dh_make --native>
 2) From folder 'Additional files' add to 'debian' 
 	-control
 	-postinst
@@ -10,7 +12,7 @@ How to create deb-package
 	-prerm
 	-rules
 3) From 'debian' delete *.ex files, which you have added before
-4) From 'MyVpn' run <fakeroot dh binary-arch>
+4) From 'myvpn-1.0' run <fakeroot dh binary-arch>
 5) *.deb file will be successfully created in ../
 6) Bin file will have path "/usr/bin/MyVpn"
 

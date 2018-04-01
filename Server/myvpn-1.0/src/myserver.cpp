@@ -43,6 +43,7 @@ void MyServer::disconnect(QString ip)
     }
     rclients.remove(it->realIpAddress.toString() + " " + QString::number(it->m_port));
     clients.remove(ip);
+    qDebug() << "Client[" << ip << "] was disconnected";
 }
 QByteArray MyServer::getErrorMessage()
 {

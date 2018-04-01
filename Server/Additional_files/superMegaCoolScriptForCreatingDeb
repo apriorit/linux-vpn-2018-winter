@@ -1,0 +1,15 @@
+#!/bin/sh
+cd ../myvpn-1.0/
+dh_make --native
+scp ../Additional_files/control debian
+scp ../Additional_files/postinst debian
+scp ../Additional_files/postrm debian
+scp ../Additional_files/preinst debian
+scp ../Additional_files/prerm debian
+scp ../Additional_files/rules debian
+rm ./debian/postinst.ex
+rm ./debian/postrm.ex
+rm ./debian/preinst.ex
+rm ./debian/prerm.ex
+fakeroot dh binary-arch
+
