@@ -49,6 +49,5 @@ P.S./////////////////////////////////////////////////////////////
 
 	Range for clients - 10.0.0.2 - 100.0.0.255
 
-	Programm use 1234 port and UDP protocol
+	Programm use 1234 port and UDP protocol 1234
 
-     I
