@@ -2,7 +2,7 @@ QT -= gui
 
 QT += core
 QT += network
-TARGET = QUdpSocket
+TARGET = MyVpn
 CONFIG += c++11 console
 CONFIG -= app_bundle
 LIBS += -L/usr/lib/crypto++ -lcrypto++
@@ -18,13 +18,17 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 TEMPLATE = app
-SOURCES += main.cpp \
-    myserver.cpp \
-    ipmanager.cpp \
-    cryptoserver.cpp
+SOURCES += src/main.cpp \
+    src/myserver.cpp \
+    src/ipmanager.cpp \
+    src/cryptoserver.cpp
 
 HEADERS += \
-    myserver.h \
-    ipmanager.h \
-    cryptoserver.h \
-    Client.h
+    src/myserver.h \
+    src/ipmanager.h \
+    src/cryptoserver.h \
+    src/Client.h
+
+target.path = /usr/bin
+
+INSTALLS += target

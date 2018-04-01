@@ -13,7 +13,7 @@ void CryptoServer::generateKeys()
     privateKey = CryptoPP::RSA::PrivateKey(params);
     publicKey = CryptoPP::RSA::PublicKey(params);
 }
-QByteArray CryptoServer::encryptRSA(const RSA::PublicKey& clientPublicKey, QByteArray buffer)
+QByteArray CryptoServer::encryptRSA(RSA::PublicKey clientPublicKey, QByteArray buffer)
 {
     // Encryption
     std::string cipher;
@@ -41,7 +41,7 @@ QByteArray CryptoServer::decryptRSA(QByteArray buffer)
 
     return QByteArray (recovered.c_str(), recovered.length());
 }
-QByteArray CryptoServer::encryptAES(const QByteArray& clientKey, QByteArray buffer)
+QByteArray CryptoServer::encryptAES(QByteArray clientKey, QByteArray buffer)
 {
     byte iv[AES::BLOCKSIZE];//IV for AES
     // Generate a random IV for AES
@@ -53,7 +53,7 @@ QByteArray CryptoServer::encryptAES(const QByteArray& clientKey, QByteArray buff
     return buffer;
 }
 
-QByteArray CryptoServer::decryptAES(const QByteArray& clientKey, QByteArray buffer)
+QByteArray CryptoServer::decryptAES(QByteArray clientKey, QByteArray buffer)
 {
     // Decrypt
     CFB_Mode<AES>::Decryption cfbDecryption((byte*)clientKey.data(),clientKey.size(), (byte*)buffer.mid(0, AES::BLOCKSIZE).data(),1);

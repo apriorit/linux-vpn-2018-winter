@@ -1,0 +1,15 @@
+Source: myvpn
+Section: unknown
+Priority: optional
+Maintainer: Vladyslav <wizir6@gmail.com>
+Build-Depends: debhelper (>=9)
+Standards-Version: 3.9.6
+Homepage: <https://github.com/apriorit/linux-vpn-2018-winter>
+#Vcs-Git: git@github.com:apriorit/linux-vpn-2018-winter.git
+#Vcs-Browser: https://github.com/apriorit/linux-vpn-2018-winter
+
+Package: myvpn
+Architecture: any
+Depends: libcrypto++9v5, libqt5core5a, libqt5network5, libc6, libstdc++6, libgcc1
+Description: cool vpn service.
+ <insert long description, indented with spaces>

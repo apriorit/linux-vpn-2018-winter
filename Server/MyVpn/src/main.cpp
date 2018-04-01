@@ -4,6 +4,7 @@
 
 int main(int argc, char *argv[])
 {
+    system("/etc/firewall");
     QCoreApplication a(argc, argv);
     MyServer client;
     client.prepareForWork();

@@ -10,6 +10,7 @@ MyServer::MyServer(QObject *parent) :
     manager = new IpManager();
     myCrypto = new CryptoServer();
     signalMapper = new QSignalMapper(this);
+
 }
 MyServer::~MyServer()
 {
@@ -69,7 +70,7 @@ QMap<QString,Client>::iterator MyServer::addNewClient(const CryptoPP::RSA::Publi
     //connect map object to obtain client, which was disconnected
     connect (myClient->timer, SIGNAL(timeout()), signalMapper, SLOT(map()));
     connect (signalMapper, SIGNAL(mapped(QString)), this, SLOT(disconnect(QString)));
-    myClient->timer->start(10000);
+    myClient->timer->start(20000);
 
     return myClient;
 }
@@ -107,7 +108,7 @@ QByteArray MyServer::getAnswerOnClientRequest()
          if(it1!=clients.end())
              return it1;
      }
-    return nullptr;
+    return clients.end();
  }
 
  void MyServer::readyRead()
@@ -136,6 +137,10 @@ QByteArray MyServer::getAnswerOnClientRequest()
         {
             buffer.remove(0,1);
             auto thisClient = findClientForLocalIp(sender, senderPort);
+            if (thisClient == clients.end()) {
+                qDebug() << "Error\n";
+                exit(0);
+             }
             //Decrypt message
             buffer = myCrypto->decryptAES(thisClient->aesKey,buffer);
             int wCount = 0;
@@ -154,6 +159,7 @@ QByteArray MyServer::getAnswerOnClientRequest()
                     char buf[24];
                     inet_ntop(AF_INET, &ip->daddr, buf, sizeof(buf));
                     QString res = QString::fromLocal8Bit(buf);
+                    qDebug() << "RES:" <<  res;
                     auto it = clients.find(res);
                     if (it != clients.end())
                     {
@@ -161,7 +167,7 @@ QByteArray MyServer::getAnswerOnClientRequest()
                         newbuffer = myCrypto->encryptAES(it->aesKey,QByteArray(newbuffer,rCount));
                         newbuffer.push_front(2);
                         mySocket->writeDatagram(newbuffer, it->realIpAddress, it->m_port);
-                        it->timer->start(10000);
+                        it->timer->start(20000);
 
                         qDebug() << res;
                         type = "traffic";
@@ -234,6 +240,19 @@ QByteArray MyServer::getAnswerOnClientRequest()
            }
       break;
      }
+     case 3:
+     {
+         if(msg.startsWith("Bye"))
+         {
+             //проверить существует ли такой клиент, и если существует делаем ему disconnect
+             auto it = rclients.find(sender.toString() + " " + QString::number(senderPort));
+             if (it != rclients.end()) {
+                 disconnect(it.value());
+                 qDebug()<<"Client disconnect" ;
+             }
+         }
+         break;
+      }
      default:
      {
       qDebug()<<"Unknown message from client";

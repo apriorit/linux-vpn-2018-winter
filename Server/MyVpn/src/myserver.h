@@ -24,7 +24,7 @@
 #include <QTimer>
 #include <iterator>
 #include <QSignalMapper>
-#include <ipmanager.h>
+#include "ipmanager.h"
 #include "cryptoserver.h"
 #include "Client.h"
 

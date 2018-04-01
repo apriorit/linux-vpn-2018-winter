@@ -18,10 +18,10 @@ public:
 
     CryptoServer();
     void generateKeys();
-    QByteArray encryptRSA(const RSA::PublicKey& clientPublicKey,QByteArray buffer);
+    QByteArray encryptRSA(RSA::PublicKey clientPublicKey,QByteArray buffer);
     QByteArray decryptRSA(QByteArray buffer);
-    QByteArray decryptAES(const QByteArray& clientKey,QByteArray buffer);
-    QByteArray encryptAES(const QByteArray& clientKey,QByteArray buffer);
+    QByteArray decryptAES(QByteArray clientKey,QByteArray buffer);
+    QByteArray encryptAES(QByteArray clientKey,QByteArray buffer);
     std::vector<byte> getEncodedPublicKey();
     RSA::PublicKey loadRSAPublicKey(std::vector<byte> queue);
 
