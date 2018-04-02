@@ -267,28 +267,14 @@ QByteArray MyServer:: buildParameters(QString ipAddress)
                "  -a <address> <prefix-length> for the private address\n"
                "  -r <address> <prefix-length> for the forwarding route\n"
                "  -d <address> for the domain name server\n"*/
-  short mtu = 1500;
-  QByteArray route ="0.0.0.0";
-  QByteArray dns ="8.8.8.8";
 
- QByteArray parametres;
- parametres.push_back("m,");
- parametres.push_back(QByteArray::number(mtu));
- parametres.push_back(" ");
- parametres.push_back("a,");
- parametres.push_back(ipAddress.toUtf8());
- parametres.push_back(",24");
- parametres.push_back(" ");
- parametres.push_back("r,");
- parametres.push_back(route);
- parametres.push_back(",0");
- parametres.push_back(" ");
- parametres.push_back("d,");
- parametres.push_back(dns);
- parametres.push_back(" ");
+  QByteArray params = "m,1500 r,0.0.0.0,0 d,8.8.8.8 a,";
+  params.push_back(ipAddress.toUtf8());
+  params.push_back(",8 ");
 
 
- return parametres;
+
+ return params;
 
 }
 
