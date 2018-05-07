@@ -16,7 +16,7 @@ How to create deb-package manually:
 5) *.deb file will be successfully created in ../
 6) Bin file will have path "/usr/bin/MyVpn"
 
-To install programm run <sudo dpkg -i nameofpackage.deb>
+To install program run <sudo dpkg -i nameofpackage.deb>
 
 Programm will run in bg mode and will restart always
 
